@@ -9,4 +9,4 @@
 // Find them in Supabase: Project Settings -> API Keys -> anon / publishable.
 
 export const SUPABASE_URL = 'https://rdadbnhrotasgkkyopel.supabase.co';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_ANON_KEY = 'sb_publishable_Eo9jM8Ww04tkh4b0rldY-w_Vni1OnfJ';
