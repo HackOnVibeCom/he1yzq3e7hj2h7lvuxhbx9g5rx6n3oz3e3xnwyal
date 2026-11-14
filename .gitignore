@@ -7,3 +7,6 @@ node_modules/
 *.log
 .env
 .env.*
+
+# drag-and-drop copy of the site for the backup host; built from the commit, not source
+_deploy/
