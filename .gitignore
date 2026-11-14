@@ -1,0 +1,9 @@
+# local playtest data — contains player submission tokens, never commit or publish
+rooms.local.json
+rooms.local.tmp
+
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
