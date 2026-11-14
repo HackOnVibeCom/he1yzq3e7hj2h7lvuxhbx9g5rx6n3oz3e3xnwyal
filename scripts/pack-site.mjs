@@ -28,7 +28,8 @@ const unpushed = tryRun('git', ['log', '--oneline', '@{upstream}..HEAD']).split(
 rmSync('_deploy', { recursive: true, force: true });
 mkdirSync('_deploy');
 execFileSync('sh', ['-c', 'git archive HEAD | tar -x -C _deploy']);
-for (const name of ['.github', '.wrangler', '.gitignore', 'scripts']) {
+// Mirror what HackOnVibe's own packaging drops, so a manual upload matches it.
+for (const name of ['.github', '.wrangler', '.gitignore', '.assetsignore', 'wrangler.jsonc', 'scripts']) {
   rmSync(join('_deploy', name), { recursive: true, force: true });
 }
 
