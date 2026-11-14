@@ -1,5 +1,6 @@
 import { questions } from './questions.js';
 import { createRoom, readRoom, submitAnswers, qrDataUrl } from './storage.js';
+import { personalLines, personalPanels } from './triggers.js';
 
 const app = document.querySelector('#app');
 const language = document.querySelector('#language');
@@ -347,7 +348,7 @@ function resultCards() {
   return {
     stat: { title: String(answers[2]), lines: [], kicker: t('我手机里的标签页，大概就这么多。', 'About this many tabs open on my phone.') },
     poster: { title: ending, lines: [], kicker: t('朋友问我要不要听剧透，我说：', 'A friend offers to spoil the movie. My answer:') },
-    badge: { title: nickname, lines: [tabs, ending, hour].filter(Boolean), kicker: t('我的答题卡', 'My answer card') },
+    badge: { title: nickname, lines: personalLines(answers, lang), kicker: t('我的答题卡', 'My answer card') },
     guess: { title: guess, lines: questions[0].options[lang], kicker: t('我最爱吃的菜就剩一口了，你问我能不能吃。我会怎么说？', 'You ask for the last bite of my favorite food. What do I say?') }
   };
 }
@@ -391,10 +392,26 @@ function personal() {
 
 }
 
+// The card is picked from all eight answers now, so the link carries all eight.
+// Links in the older five-field shape still open; they show the tab-count card,
+// which is all they ever had the data for.
 function recapLink() {
   const url = new URL(location.pathname, location.origin);
-  url.hash = 'recap=' + encodeURIComponent(JSON.stringify([lang, nickname, avatar, answers[2], answers[4], answers[5]]));
+  url.hash = 'recap=' + encodeURIComponent(JSON.stringify([lang, nickname, avatar, answers]));
   return url.href;
+}
+
+// Anything arriving in a URL is a stranger's input, so check its shape before
+// letting it reach the card. Text is escaped at render.
+function validSharedAnswers(value) {
+  const choice = (v, max) => Number.isInteger(v) && v >= 0 && v <= max;
+  return Array.isArray(value) && value.length === 8 &&
+    choice(value[0], 2) && choice(value[1], 2) &&
+    Number.isSafeInteger(value[2]) && value[2] >= 0 && value[2] <= 100000 &&
+    Array.isArray(value[3]) && value[3].length === 3 &&
+    [0, 1, 2].every(fate => value[3].includes(fate)) &&
+    choice(value[4], 2) && choice(value[5], 1) && choice(value[6], 2) &&
+    typeof value[7] === 'string' && value[7].length <= 100;
 }
 
 function openSharedRecap() {
@@ -415,18 +432,25 @@ function openSharedRecap() {
   if (!location.hash.startsWith('#recap=')) return false;
   try {
     const data = JSON.parse(decodeURIComponent(location.hash.slice(7)));
-    if (!Array.isArray(data) || ![5, 6].includes(data.length)) return false;
-    const [locale, name, icon, tabs, spoiler, hour] = data;
+    if (!Array.isArray(data) || ![4, 5, 6].includes(data.length)) return false;
+    const [locale, name, icon, ...rest] = data;
     if (![0, 1].includes(locale) || typeof name !== 'string' || !name.trim() || name.length > 24 ||
-        !Number.isInteger(icon) || !avatars[icon] || !Number.isSafeInteger(tabs) || tabs < 0 ||
-        ![0, 1, 2].includes(spoiler) || (hour !== undefined && ![0, 1].includes(hour))) return false;
+        !Number.isInteger(icon) || !avatars[icon]) return false;
+    const full = rest.length === 1 && validSharedAnswers(rest[0]);
+    if (!full) {
+      const [tabs, spoiler, hour] = rest;
+      if (!Number.isSafeInteger(tabs) || tabs < 0 || ![0, 1, 2].includes(spoiler) ||
+          (hour !== undefined && ![0, 1].includes(hour))) return false;
+      answers[2] = tabs;
+      answers[4] = spoiler;
+      answers[5] = hour;
+    } else {
+      answers = rest[0];
+    }
     lang = locale;
     nickname = name;
     avatar = icon;
-    answers[2] = tabs;
-    answers[4] = spoiler;
-    answers[5] = hour;
-    resultStyle = 'stat';
+    resultStyle = full ? 'badge' : 'stat';
     sharedRecap = true;
     show('personal');
     return true;
@@ -510,16 +534,12 @@ function drawRoundPoster(ctx, qr, fill, layout, ink, write) {
   const right = 840;
   const width = right - left;
   const paper = '#fffdf6';
-  const prompts = [
-    t('我手机上开了多少个网页？', 'How many tabs are open in my phone browser?'),
-    t('朋友要剧透，我怎么回？', 'A friend offers to spoil the movie. What do I say?'),
-    t('每天白送我一小时，我拿来干嘛？', 'How would I spend an extra hour every day?')
-  ];
-  const replies = [
-    t(`大概 ${answers[2]} 个`, `About ${answers[2]}`),
-    resultCards().poster.title,
-    answers[5] === 0 ? t('早上再睡一小时', 'I’d sleep in.') : t('晚上再玩一小时', 'I’d save it for nighttime.')
-  ];
+  // The same three findings as the card, in the same order, but in their short
+  // form: this canvas draws big text that does not wrap inside fixed panels.
+  const picked = personalPanels(answers, lang);
+  while (picked.length < 3) picked.push({ prompt: packName(), reply: t('八道题', 'Eight questions') });
+  const prompts = picked.map(panel => panel.prompt);
+  const replies = picked.map(panel => panel.reply);
   function block(x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
@@ -685,18 +705,26 @@ function drawComicCover(ctx, qr, fill, ink, prompts, replies, write) {
   const heading = write(t(`关于${nickname}的三件小事`, `Three things about ${nickname}`), 50, lang === 0 ? 188 : 174, lang === 0 ? 56 : 64, 800, 577, lang === 0);
 
   const panels = [
-    { answer: 1, x: 52, y: 294, width: 730, height: lang === 0 ? 186 : 239, tilt: -.022 },
-    { answer: 0, x: 166, y: lang === 0 ? 522 : 571, width: 681, height: 178, tilt: .018 },
+    { answer: 0, x: 52, y: 294, width: 730, height: lang === 0 ? 186 : 239, tilt: -.022, wrap: true },
+    { answer: 1, x: 166, y: lang === 0 ? 522 : 571, width: 681, height: 178, tilt: .018 },
     { answer: 2, x: 53, y: lang === 0 ? 750 : 803, width: 635, height: 178, tilt: -.016 }
   ];
   const font = getComputedStyle(document.body).fontFamily;
+  // Scaling the size by the width ratio only estimates: glyph widths are not
+  // linear in font size, so the estimate lands a few pixels over often enough
+  // that the line wraps and spills out of a fixed-height panel. Measure it.
   function fitLine(text, x, y, size, max, minimum = 22) {
     ctx.font = `800 ${size}px ${font}`;
-    const fitted = Math.max(minimum, Math.min(size, Math.floor(size * max / ctx.measureText(text).width)));
+    let fitted = Math.max(minimum, Math.min(size, Math.floor(size * max / ctx.measureText(text).width)));
+    ctx.font = `800 ${fitted}px ${font}`;
+    while (fitted > minimum && ctx.measureText(text).width > max) {
+      fitted -= 1;
+      ctx.font = `800 ${fitted}px ${font}`;
+    }
     write(text, x, y, fitted, 800, max);
   }
 
-  for (const { answer, x, y, width, height, tilt } of panels) {
+  for (const { answer, x, y, width, height, tilt, wrap } of panels) {
     ctx.save();
     ctx.translate(x + width / 2, y + height / 2);
     ctx.rotate(tilt);
@@ -714,7 +742,7 @@ function drawComicCover(ctx, qr, fill, ink, prompts, replies, write) {
     ctx.stroke();
     fitLine(prompts[answer], 32, 52, 27, width - 64);
     if (lang === 0) fitLine(replies[answer], 32, 128, 59, width - 64, 32);
-    else if (answer === 1) write(replies[answer], 32, 123, 63, 800, width - 64);
+    else if (wrap) write(replies[answer], 32, 123, 63, 800, width - 64);
     else fitLine(replies[answer], 32, 133, 70, width - 64, 32);
     ctx.restore();
   }

@@ -70,6 +70,7 @@ const assets = {
   '/': ['index.html', 'text/html'],
   '/config.js': ['config.js', 'text/javascript'],
   '/storage.js': ['storage.js', 'text/javascript'],
+  '/triggers.js': ['triggers.js', 'text/javascript'],
   '/vendor/qrcode.esm.js': ['vendor/qrcode.esm.js', 'text/javascript'],
   '/app.js': ['app.js', 'text/javascript'],
   '/questions.js': ['questions.js', 'text/javascript'],
