@@ -8,15 +8,37 @@ result copy and the decisions behind them.
 
 ## How this is deployed
 
-HackOnVibe serves **static files only** — no Node process runs in production.
-So the site is the plain files in this repository, and the rooms live in a hosted
-Postgres database at Supabase that the browser talks to directly.
+HackOnVibe has **automatic site publishing switched off for this hackathon**, so
+the team subdomain never goes live and the CI `verify` step always fails. That red
+cross is a known false failure, confirmed by the organisers; the `build` job above
+it is the one that matters, and it is green. Judges open the link submitted in the
+team cabinet instead.
 
-- There is **no `build` script** in `package.json`, on purpose. That is what tells
-  HackOnVibe CI to publish this folder as-is. Adding one changes the build mode.
-- `index.html` must stay at the repository root.
-- `.github/workflows/deploy.yml` is managed by the platform and restored if edited.
-  Change the app, not the workflow.
+So the site is hosted separately, and every update goes to two places:
+
+| Where | Why |
+| --- | --- |
+| This repository, on `main` | The judges check that the commit history of the work is here |
+| The static host | The judges open this to actually play it |
+
+```
+git push origin main     # history for the judges
+npm run pack             # rebuilds _deploy/
+                         # then upload _deploy/ to the host
+```
+
+`npm run pack` packages the **last commit**, not the working tree, so whatever is
+live is something that exists in this repository. It stops if there are
+uncommitted changes, warns about unpushed commits, and refuses to package
+`rooms.local.json` or any `.env` file.
+
+The script is called `pack` and not `build` on purpose: HackOnVibe CI greps
+`package.json` for a `"build"` key and would switch out of plain-static mode.
+`index.html` must also stay at the repository root for that mode.
+`.github/workflows/deploy.yml` is managed by the platform and restored if edited.
+
+There is no server anywhere in production. The browser talks to Postgres at
+Supabase directly, which is why a plain static host is enough.
 
 ### First-time database setup
 
