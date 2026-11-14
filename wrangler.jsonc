@@ -1,0 +1,16 @@
+// Cloudflare Workers config, used only by the backup host.
+//
+// Connecting this repository to Cloudflare builds it as a Worker, and
+// `wrangler deploy` needs to be told which directory to serve. There is no
+// `main` key on purpose: this is a static site with no Worker script, so
+// Cloudflare serves the assets directly.
+//
+// HackOnVibe's own CI never sees this file — its packaging step excludes
+// `wrangler.*` — so it cannot affect the plain-static build there.
+{
+  "name": "little-things",
+  "compatibility_date": "2026-11-14",
+  "assets": {
+    "directory": "."
+  }
+}

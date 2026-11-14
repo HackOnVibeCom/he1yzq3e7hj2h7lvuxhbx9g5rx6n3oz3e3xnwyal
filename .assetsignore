@@ -1,0 +1,21 @@
+# Not served by the site. Workers, unlike Pages, skips nothing by default,
+# so repository plumbing has to be listed here explicitly.
+**/.git
+**/node_modules
+**/.DS_Store
+.github
+.wrangler
+scripts
+_deploy
+
+# Local playtest only — rooms.local.json holds player tokens.
+server.js
+rooms.local.json
+rooms.local.tmp
+package.json
+package-lock.json
+
+# Config files themselves
+wrangler.jsonc
+.assetsignore
+.gitignore
