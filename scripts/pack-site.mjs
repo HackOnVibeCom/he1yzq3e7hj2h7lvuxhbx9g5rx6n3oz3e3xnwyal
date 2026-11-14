@@ -10,6 +10,8 @@ import { rmSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const run = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
+// Some git questions have no answer (no upstream yet); that is not a failure.
+const tryRun = (cmd, args) => { try { return run(cmd, args); } catch { return ''; } };
 const force = process.argv.includes('--force');
 
 const dirty = run('git', ['status', '--porcelain']);
@@ -21,7 +23,7 @@ if (dirty && !force) {
   process.exit(1);
 }
 
-const unpushed = run('git', ['log', '--oneline', '@{upstream}..HEAD']).split('\n').filter(Boolean);
+const unpushed = tryRun('git', ['log', '--oneline', '@{upstream}..HEAD']).split('\n').filter(Boolean);
 
 rmSync('_deploy', { recursive: true, force: true });
 mkdirSync('_deploy');
