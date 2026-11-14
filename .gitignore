@@ -10,3 +10,6 @@ node_modules/
 
 # drag-and-drop copy of the site for the backup host; built from the commit, not source
 _deploy/
+
+# wrangler local state; the platform committed its own account into this once
+.wrangler/
