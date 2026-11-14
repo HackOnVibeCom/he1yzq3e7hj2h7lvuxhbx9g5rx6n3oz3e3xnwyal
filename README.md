@@ -14,12 +14,15 @@ cross is a known false failure, confirmed by the organisers; the `build` job abo
 it is the one that matters, and it is green. Judges open the link submitted in the
 team cabinet instead.
 
-So the site is hosted separately, and every update goes to two places:
+The site is hosted on Cloudflare Workers instead, at
+<https://he1yzq3e7hj2h7lvuxhbx9g5rx6n3oz3e3xnwyal.charliezhang0731.workers.dev/>,
+which deploys automatically on every push to `main` using `wrangler.jsonc`.
+Every update therefore goes to two places at once:
 
 | Where | Why |
 | --- | --- |
 | This repository, on `main` | The judges check that the commit history of the work is here |
-| The static host | The judges open this to actually play it |
+| [The live site](https://he1yzq3e7hj2h7lvuxhbx9g5rx6n3oz3e3xnwyal.charliezhang0731.workers.dev/) | The judges open this to actually play it |
 
 ```
 git push origin main     # history for the judges
