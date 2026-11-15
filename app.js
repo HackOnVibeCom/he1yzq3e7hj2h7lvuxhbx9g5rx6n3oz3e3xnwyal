@@ -455,7 +455,7 @@ function quiz() {
   } else if (q.kind === 'number') {
     input = `<input type="number" class="field" id="answer" min="0" step="1" inputmode="numeric" aria-labelledby="title" value="${answer ?? ''}">`;
   } else {
-    input = `<input class="field" id="answer" maxlength="100" aria-labelledby="title" placeholder="${t('比如：发圈', 'e.g. Hair ties')}" value="${escape(answer ?? '')}">`;
+    input = `<input class="field" id="answer" maxlength="100" aria-labelledby="title" placeholder="${t('耳机', 'AirPods')}" value="${escape(answer ?? '')}">`;
   }
   const next = q.kind === 'text' && !answer ? t('跳过', 'Skip') : t('继续', 'Continue');
   return `<div class="quizbar"><progress value="${index + 1}" max="8" aria-label="${t('答题进度', 'Quiz progress')}"></progress><span class="steps">${index + 1} / 8</span></div>` +
@@ -1089,19 +1089,49 @@ function group() {
     </footer></section>${status}`;
 }
 
-const packName = () => t('日常小事', 'Everyday Dilemmas');
+const packName = () => t('日常小纠结', 'Everyday Dilemmas');
+
+function home() {
+  const prompts = [
+    t('你会剧透吗？', 'Would you spoil the ending?'),
+    t('喝咖啡，你一定点什么？', 'Your coffee order, no hesitation?'),
+    t('你是早起派还是夜猫子？', 'Are you a morning person or a night owl?'),
+    t('披萨上放菠萝？', 'Pineapple on pizza: yes or no?'),
+    t('你吃不吃披萨边？', 'Do you eat the pizza crust?'),
+    t('出门玩，你喜欢做攻略还是随便逛？', 'Plan the trip or wing it?'),
+    t('在家会穿袜子吗？', 'Socks on or off at home?'),
+    t('看电影前，你会先看预告片吗？', 'Do you watch the trailer first?')
+  ];
+  const chips = prompts.map(prompt => `<li>${prompt}</li>`).join('');
+  return `<section class="home-intro">
+    <h1 tabindex="-1">${t('关于朋友，<mark>永远可以多知道一些</mark>。', 'There’s always <br class="home-mobile-break"><mark>a little more</mark><br class="home-desktop-break"> to know about each other.')}</h1>
+    <div class="home-prompt-band">
+      <div class="home-prompt-track"><ul>${chips}</ul><ul aria-hidden="true">${chips}</ul></div>
+    </div>
+    <button type="button" class="home-prompt-pause" id="pause-prompts" aria-pressed="false" aria-label="${t('暂停滚动问题', 'Pause scrolling questions')}"><span aria-hidden="true"></span></button>
+    <div class="home-copy">
+      <p>${t('不论是刚认识，还是熟到不行，多了解一点，永远不晚，永远有趣。', 'Maybe you just met. Maybe you go way back.<br>Either way, there are little questions you’ve never thought to ask.')}</p>
+      <p>${t('Little Things 为此而生。选一个题目包，分享给朋友，随手答几题，不用约时间，不用全员在线。看看你们的答案能碰出什么火花。', 'Little Things is a quick quiz game for friends. Pick a pack, share the link, and play whenever. The fun part is seeing what everyone went with.')}</p>
+    </div>
+  </section>
+  <section class="home-packs" aria-labelledby="pack-heading">
+    <h2 id="pack-heading">${t('挑一套题', 'Pick a pack')} <span aria-hidden="true">↓</span></h2>
+    ${packCard({ heading: 'h3' })}
+  </section>`;
+}
 
 function packCard({ heading = 'h1', invited = false } = {}) {
-  const countTag = `<span class="pack-count">${t(`${questions.length} 道题`, `${questions.length} questions`)}</span>`;
+  const countTag = `<span class="pack-count">${t(`${questions.length} 道题 · 约 2 分钟`, `${questions.length} questions · 2 minutes`)}</span>`;
   return frame(`<${heading} class="pack-title">${packName()}</${heading}>
     ${invited ? '<p class="sub invite-spots" id="round-counts" role="status"></p>'
-      : `<p class="sub">${t('无聊的小事也有意想不到的答案。', 'A game to get to know each other through questions you’d never think to ask.')}</p>`}
+      : `<p class="sub">${t('问点没问过的，重新认识一下。', 'A game to get to know each other through questions you’d never think to ask.')}</p>`}
     <div class="actions">${button('start', t('开始答题', 'Start Quiz'), 'primary')}</div>${status}`,
     `<div class="art hero-art"><img src="./everyday-cover.png" alt="">${countTag}</div>`, 'hero');
 }
 
 
 function render() {
+  app.classList.toggle('home-page', screen === 'home');
   if (debug) document.querySelector('.brand').href = '?debug=1';
   document.documentElement.lang = t('zh-CN', 'en');
   headerShare.hidden = !sharedRecap || resultStyle !== 'guess';
@@ -1109,7 +1139,12 @@ function render() {
   language.setAttribute('aria-label', t('语言', 'Language'));
   for (const chip of language.children) chip.setAttribute('aria-pressed', String(Number(chip.dataset.language) === lang));
   if (screen === 'home' || screen === 'invite') {
-    app.innerHTML = packCard({ invited: screen === 'invite' });
+    app.innerHTML = screen === 'home' ? home() : packCard({ invited: true });
+    linkAction('pause-prompts', event => {
+      const control = event.currentTarget;
+      const paused = control.getAttribute('aria-pressed') === 'true';
+      control.setAttribute('aria-pressed', String(!paused));
+    });
     linkAction('start', start);
   } else if (screen === 'quiz') {
     app.innerHTML = quiz();

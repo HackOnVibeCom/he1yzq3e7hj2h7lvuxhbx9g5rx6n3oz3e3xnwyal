@@ -168,7 +168,7 @@ The local preview switches between screens and room states. The app has a single
 
 ## Current screen details
 
-- **Home** uses the Everyday Dilemmas illustration with a light halftone and an ink pill with lime text in the art’s upper right. The pack title sits on one line and the white area contains the subtitle and Start Quiz. The bilingual wordmark stays in the site header.
+- **Home** opens with a centered headline with a lime highlight, a scrolling strip of question chips, and two short paragraphs. Under **Pick a pack**, center the original Everyday Dilemmas card and show its question count and Start Quiz.
 - **Quiz cards** place the question’s drawn icon in a compact sticker that overlaps the top-left edge of the card. The title and controls sit within the card.
 - **Avatars** use the supplied set of 20 transparent stickers. Select a contrasting tile fill per sticker from the share palette. Keep each sticker’s tile fill consistent in the picker and the group reveal. On exported artwork the transparent sticker sits inside the card’s own frame and follows its color.
 - **Personal result** displays one Pop Cover. The export uses the same 900 × 1200 canvas as the preview. Keep the original staggered stickers, corner dots, heading/avatar alignment and footer-text/QR alignment. The selectable colors apply to the image only.

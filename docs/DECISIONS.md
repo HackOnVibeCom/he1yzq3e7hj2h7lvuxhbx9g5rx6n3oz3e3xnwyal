@@ -2,8 +2,8 @@
 
 ## Settled
 
-- **Working app name** is Little Things. **First pack** is 日常小事 / Everyday Dilemmas. Chinese product name and public domain are open.
-- **Home copy** uses “A game to get to know each other through questions you’d never think to ask.” and “无聊的小事也有意想不到的答案。”
+- **Working app name** is Little Things. **First pack** is 日常小纠结 / Everyday Dilemmas. Chinese product name and public domain are open.
+- **Pack card subtitle** uses “A game to get to know each other through questions you’d never think to ask.” and “问点没问过的，重新认识一下。”
 - **One CTA on home** starts the quiz. The invite action appears in the round flow. Room creation happens behind the scenes.
 - **Async room** uses one invitation link. People choose nicknames and avatars at submission. Only submitted answers enter results.
 - **Personal result** defaults to one Pop Cover. Keep color swatches and Save image. Use the last-bite thumbnail for the room invite’s chat preview.

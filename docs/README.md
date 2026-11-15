@@ -1,6 +1,6 @@
 # Little Things
 
-Little Things is the working product name. The first playable pack is **日常小事 / Everyday Dilemmas**.
+Little Things is the working product name. The first playable pack is **日常小纠结 / Everyday Dilemmas**.
 
 - [PRD](PRD.md) covers MVP and acceptance.
 - [User flow](USER_FLOW.md) describes starting, inviting, submitting and sharing.

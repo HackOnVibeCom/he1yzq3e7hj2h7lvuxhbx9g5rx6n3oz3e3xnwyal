@@ -2,7 +2,7 @@
 
 Eight small questions. Answer them, then see how your friends answered.
 
-The playable pack is **日常小事 / Everyday Dilemmas**, bilingual throughout.
+The playable pack is **日常小纠结 / Everyday Dilemmas**, bilingual throughout.
 See [docs/](docs/README.md) for the design system, user flow, question pack,
 result copy and the decisions behind them.
 

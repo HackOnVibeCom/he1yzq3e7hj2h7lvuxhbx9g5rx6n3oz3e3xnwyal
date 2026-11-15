@@ -41,13 +41,40 @@ const PHONE = [["daisy", "solid", 240, 34, 19, "#dff06c", 25], ["star", "dots", 
 const DESKTOP = [["star", "solid", 1183, 400, 15, "#dff06c", 0], ["semi", "stripes", 236, 440, 20, "#f4a8bd", -30], ["daisy", "solid", 116, 696, 17, "#b5d233", 0], ["circle", "dots", 888, 36, 14, "#4a5a1e", 12], ["capsule", "solid", 1257, 830, 38, "#9bb8f8", -15], ["drop", "solid", 243, 208, 12, "#dff06c", 40], ["heart", "stripes", 1075, 609, 19, "#f6c07a", 12], ["moon", "solid", 1, 180, 13, "#dff06c", 25], ["lolli", "dots", 389, 761, 15, "#4a5a1e", 25], ["candy", "solid", 735, 745, 16, "#b5d233", 40], ["spark", "solid", 539, 89, 17, "#f4a8bd", -30], ["star", "stripes", 932, 334, 13, "#9bb8f8", -15], ["semi", "solid", 1184, 111, 22, "#dff06c", 25], ["daisy", "dots", 949, 852, 15, "#4a5a1e", 25], ["circle", "solid", 1, 468, 18, "#dff06c", 40]];
 
 export function mountPageScatter() {
+  let lastWidth = 0;
+  let lastHeight = 0;
+  let lastBandHeight = 0;
+
   function render() {
     const width = document.documentElement.clientWidth;
-    const height = window.innerHeight;
+    const bandHeight = window.innerHeight;
+    const height = Math.max(bandHeight, document.body.offsetHeight);
+    if (width === lastWidth && height === lastHeight && bandHeight === lastBandHeight) return;
+    lastWidth = width;
+    lastHeight = height;
+    lastBandHeight = bandHeight;
+
     const phone = width < 640;
     const [designWidth, designHeight, layout] = phone ? [390, 844, PHONE] : [1280, 860, DESKTOP];
-    const items = layout.map(([kind, fill, x, y, size, color, rotation]) =>
-      [kind, fill, x * width / designWidth, y * height / designHeight, size, color, rotation]);
+    const items = [];
+    for (let band = 0; band * bandHeight < height; band++) {
+      // Give each band a stable variation so content changes don't reshuffle the page.
+      let seed = band;
+      const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+      for (const [kind, fill, x, y, size, color, rotation] of layout) {
+        const baseX = x * width / designWidth;
+        const baseY = y * bandHeight / designHeight;
+        const nextX = band ? Math.max(0, Math.min(width, (band % 2 ? width - baseX : baseX) + (random() - .5) * width * .12)) : baseX;
+        const nextY = band ? Math.max(0, Math.min(bandHeight, baseY + (random() - .5) * bandHeight * .10)) : baseY;
+        const pageY = band * bandHeight + nextY;
+        if (pageY - size < height) {
+          items.push([kind, fill, nextX, pageY, size, color, rotation + (band ? (random() - .5) * 45 : 0)]);
+        }
+      }
+    }
     document.querySelector('.page-scatter')?.remove();
     document.body.insertAdjacentHTML('afterbegin', scatterSVG(width, height, items));
   }
@@ -57,6 +84,7 @@ export function mountPageScatter() {
   }
 
   render();
+  new ResizeObserver(render).observe(document.body);
   updateHeader();
   window.addEventListener('resize', render);
   window.addEventListener('scroll', updateHeader, { passive: true });

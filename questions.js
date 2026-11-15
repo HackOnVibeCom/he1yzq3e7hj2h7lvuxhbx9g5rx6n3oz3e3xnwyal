@@ -14,7 +14,7 @@ export const legacyQuestions = [
       [
         "吃吧，都给你。",
         "咱俩一人一半。",
-        "这口我自己吃。"
+        "抱歉，这口我要自己留着。"
       ],
       [
         "You can have the whole bite.",
@@ -31,14 +31,14 @@ export const legacyQuestions = [
       "Wrong person"
     ],
     "prompt": [
-      "你冲人挥手，挥到一半发现认错人了。你怎么办？",
+      "迎面走来个人，你手都挥一半了，突然发现认错人了。你怎么办？",
       "You’re halfway through a wave when you realize it’s the wrong person. What do you do?"
     ],
     "options": [
       [
-        "赶紧把手放下来。",
+        "默默把手放下。",
         "假装在伸懒腰。",
-        "接着挥。打个招呼也没啥。"
+        "干脆将错就错，就当打个招呼。"
       ],
       [
         "Put my hand down.",
@@ -55,7 +55,7 @@ export const legacyQuestions = [
       "How many tabs?"
     ],
     "prompt": [
-      "你手机浏览器现在开着几个标签页？猜个数也行。",
+      "你手机浏览器里现在开着多少个标签页？凭直觉猜一下就行。",
       "How many tabs are open in your phone browser right now? A guess is fine."
     ]
   },
@@ -103,14 +103,14 @@ export const legacyQuestions = [
       "Spoilers"
     ],
     "prompt": [
-      "电影看到一半，朋友问你：「要不要我直接剧透结局？」",
+      "看电影看到一半，朋友突然问你：「要我给你剧透结局吗？」",
       "You’re halfway through a movie. Your friend asks, “Want me to spoil the ending?”"
     ],
     "options": [
       [
         "别说，一个字都别说。",
         "先给点提示，我再想想。",
-        "快说，我就爱听剧透。"
+        "快说快说，我最爱被剧透了。"
       ],
       [
         "Don’t say a word.",
@@ -173,7 +173,7 @@ export const legacyQuestions = [
       "Always looking for"
     ],
     "prompt": [
-      "有什么小东西，你老是找不着？",
+      "有什么东西是你每次急用却死活找不到的？",
       "What’s one small thing you’re always looking for?"
     ],
     "hint": [
@@ -188,7 +188,7 @@ export const questions = legacyQuestions.map((question, index) => {
     ...question,
     title: ['超能力分给谁', 'Superpower swap'],
     prompt: [
-      '三个超能力，留一个给自己，送一个给朋友，再送一个给仇人。你怎么分？',
+      '假如给你三个超能力，自己留一个，送朋友一个，送你的死对头一个，你怎么分？',
       'You get three superpowers. Keep one, give one to a friend, and give one to your nemesis. Who gets what?'
     ],
     options: [
@@ -196,7 +196,7 @@ export const questions = legacyQuestions.map((question, index) => {
       ['For me', 'For a friend', 'For my nemesis']
     ],
     items: [
-      ['躺下秒睡', '每次都能把人逗笑', '次次点中最好吃的菜'],
+      ['粘枕头就秒睡', '永远能精准地抛梗接梗', '每次都能点到全桌最好吃的那道菜'],
       ['Fall asleep instantly', 'Always land the punchline', 'Always order the best dish']
     ],
     itemIcons: ['🌙', '💬', '🍴']
@@ -207,9 +207,13 @@ export const questions = legacyQuestions.map((question, index) => {
     title: ['哪件最像你', 'Sounds like me'],
     prompt: ['下面哪件事最像你会干的？', 'Which of these sounds most like you?'],
     options: [
-      ['听到喜欢的歌就单曲循环。', '点菜前先看别人桌上吃什么。', '看到可爱的狗就想跟它打招呼。'],
+      ['遇到喜欢的歌能单曲循环一整天。', '去餐厅吃饭总忍不住偷看隔壁桌点了啥。', '路上看到每一只小狗都要跟它打招呼。'],
       ['Play a song on repeat as soon as I like it.', 'Peek at other tables before I order.', 'Say hi to every cute dog I see.']
     ]
+  };
+  if (index === 7) return {
+    ...question,
+    prompt: [question.prompt[0], 'What’s one thing you can never find when you need it?']
   };
   return question;
 });

@@ -1,4 +1,4 @@
-# Question Pack · 日常小事 / Everyday Dilemmas
+# Question Pack · 日常小纠结 / Everyday Dilemmas
 
 **状态 / Status：MVP 双语题包 / MVP bilingual question pack**
 
@@ -11,7 +11,7 @@ Everyone in a room gets the same eight questions in this order, in either langua
 
 - 吃吧，都给你。
 - 咱俩一人一半。
-- 这口我自己吃。
+- 抱歉，这口我要自己留着。
 
 A friend wants the last bite of your favorite food. What do you say?
 
@@ -21,11 +21,11 @@ A friend wants the last bite of your favorite food. What do you say?
 
 ### 2. 认错人了 · Wrong person
 
-你冲人挥手，挥到一半发现认错人了。你怎么办？
+迎面走来个人，你手都挥一半了，突然发现认错人了。你怎么办？
 
-- 赶紧把手放下来。
+- 默默把手放下。
 - 假装在伸懒腰。
-- 接着挥。打个招呼也没啥。
+- 干脆将错就错，就当打个招呼。
 
 You’re halfway through a wave when you realize it’s the wrong person. What do you do?
 
@@ -35,27 +35,27 @@ You’re halfway through a wave when you realize it’s the wrong person. What d
 
 ### 3. 几个标签页 · How many tabs?
 
-你手机浏览器现在开着几个标签页？猜个数也行。
+你手机浏览器里现在开着多少个标签页？凭直觉猜一下就行。
 
 How many tabs are open in your phone browser right now? A guess is fine.
 
 ### 4. 超能力分给谁 · Superpower swap
 
-三个超能力，留一个给自己，送一个给朋友，再送一个给仇人。你怎么分？
+假如给你三个超能力，自己留一个，送朋友一个，送你的死对头一个，你怎么分？
 
 You get three superpowers. Keep one, give one to a friend, and give one to your nemesis. Who gets what?
 
-- 躺下秒睡 / Fall asleep instantly
-- 每次都能把人逗笑 / Always land the punchline
-- 次次点中最好吃的菜 / Always order the best dish
+- 粘枕头就秒睡 / Fall asleep instantly
+- 永远能精准地抛梗接梗 / Always land the punchline
+- 每次都能点到全桌最好吃的那道菜 / Always order the best dish
 
 ### 5. 剧透 · Spoilers
 
-电影看到一半，朋友问你：「要不要我直接剧透结局？」
+看电影看到一半，朋友突然问你：「要我给你剧透结局吗？」
 
 - 别说，一个字都别说。
 - 先给点提示，我再想想。
-- 快说，我就爱听剧透。
+- 快说快说，我最爱被剧透了。
 
 You’re halfway through a movie. Your friend asks, “Want me to spoil the ending?”
 
@@ -81,17 +81,17 @@ You get a free hour every day. Would you rather sleep in for an hour or have an 
 
 Which of these sounds most like you?
 
-- 听到喜欢的歌就单曲循环。 / Play a song on repeat as soon as I like it.
-- 点菜前先看别人桌上吃什么。 / Peek at other tables before I order.
-- 看到可爱的狗就想跟它打招呼。 / Say hi to every cute dog I see.
+- 遇到喜欢的歌能单曲循环一整天。 / Play a song on repeat as soon as I like it.
+- 去餐厅吃饭总忍不住偷看隔壁桌点了啥。 / Peek at other tables before I order.
+- 路上看到每一只小狗都要跟它打招呼。 / Say hi to every cute dog I see.
 
 ### 8. 老是找不着 · Always looking for
 
-有什么小东西，你老是找不着？
+有什么东西是你每次急用却死活找不到的？
 
 写一样就行。想不到可以跳过。
 
-What’s one small thing you’re always looking for?
+What’s one thing you can never find when you need it?
 
 Name one thing, or skip.
 

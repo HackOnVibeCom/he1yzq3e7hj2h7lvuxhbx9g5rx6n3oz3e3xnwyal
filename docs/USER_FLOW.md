@@ -1,6 +1,6 @@
 # Little Things · User flow
 
-Current flow for **日常小事 / Everyday Dilemmas**. [FigJam breadboard](https://www.figma.com/board/0nb0s68wPrqhhbO1zDixAW/Little-Things---Hackathon---Nov-14?node-id=6-162)
+Current flow for **日常小纠结 / Everyday Dilemmas**. [FigJam breadboard](https://www.figma.com/board/0nb0s68wPrqhhbO1zDixAW/Little-Things---Hackathon---Nov-14?node-id=6-162)
 
 ## Start and play
 

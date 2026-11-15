@@ -6,7 +6,7 @@ Help friends discover things they would rarely think to ask each other. Players 
 
 ## MVP
 
-- One bilingual pack, **日常小事 / Everyday Dilemmas**, with eight shared questions per room. In-progress rooms keep their original pack version.
+- One bilingual pack, **日常小纠结 / Everyday Dilemmas**, with eight shared questions per room. In-progress rooms keep their original pack version.
 - Home’s Start Quiz creates a room and opens Q1. A room invite opens the invite cover; Start Quiz joins that room.
 - Players arrive via the same link, answer independently, choose a nickname and one of 20 sticker avatars, then submit.
 - A personal recap is immediately available after submission. The default is the Pop Cover with three real answers, a selectable card color and a downloadable PNG with QR code.
