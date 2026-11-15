@@ -29,7 +29,7 @@ a { color: inherit; }
 .brand { font: 800 1.25rem var(--display); text-decoration: none; white-space: nowrap; }
 .brand span { color: var(--primary); font-size: 1.55rem; vertical-align: -.08em; }
 .plain { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; font-weight: 700; }
-main { padding: 14px 20px 48px; margin: auto; max-width: 600px; }
+main { padding: 14px 20px calc(120px + env(safe-area-inset-bottom)); margin: auto; max-width: 600px; }
 .frame { background: var(--white); border: 1px solid var(--line); border-radius: 32px; overflow: hidden; box-shadow: 0 9px 0 var(--shadow); }
 .art { position: relative; display: grid; place-items: center; overflow: hidden; min-height: 142px; background: var(--soft); }
 .art.lime { background: var(--lime); }
@@ -290,6 +290,10 @@ html[lang="zh-CN"] .option { font-weight: 400; line-height: 1.6; }
 .recap-export canvas { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; }
 .recap-export figcaption:not([hidden]) { position: absolute; inset: 0; display: grid; place-items: center; background: var(--white); }
 .recap-export[aria-busy="true"] canvas { visibility: hidden; }
+.recap-export canvas[hidden] { display: none; }
+.recap-still { display: block; width: 100%; height: auto; -webkit-touch-callout: default; user-select: auto; }
+.brand-flower { width: .9em; height: .9em; vertical-align: -.08em; flex: none; }
+.brand .brand-flower { width: 1.05em; height: 1.05em; vertical-align: -.16em; margin-right: .1em; }
 .deal-art { background-image: radial-gradient(var(--ink) 1px, transparent 1.5px); background-size: 14px 14px; }
 .deal-art .flat-card { border: 2px solid var(--ink); }
 

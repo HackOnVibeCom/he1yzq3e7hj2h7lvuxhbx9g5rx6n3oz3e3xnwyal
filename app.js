@@ -68,6 +68,9 @@ const questionArt = {
 const cornerSticker = (icon, color) =>
   `<span class="sticker corner-sticker" style="--sticker-fill:${color}" aria-hidden="true">${
     questionArt[icon] ? `<img src="./icons/${questionArt[icon]}.png" alt="">` : icon}</span>`;
+// The ✿ glyph comes from whatever font a device falls back to, and on iPhone
+// that is a spiky asterisk. Draw it instead.
+const brandFlower = `<svg class="brand-flower" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="12" cy="6" r="4.6"/><circle cx="17.7" cy="10.1" r="4.6"/><circle cx="15.5" cy="16.9" r="4.6"/><circle cx="8.5" cy="16.9" r="4.6"/><circle cx="6.3" cy="10.1" r="4.6"/></g><circle cx="12" cy="12" r="2.6" fill="var(--paper, #fbf9f0)"/></svg>`;
 const frame = (body, illustration = '', style = '') =>
   `<section class="frame ${style}">${illustration}<div class="content">${body}</div></section>`;
 const status = '<p class="status" id="status" role="status"></p>';
@@ -521,7 +524,7 @@ function personal() {
       ${resultStyle === 'badge' ? '' : `<p>${escape(kicker)}</p>`}
       ${lines.length ? `<ol class="result-lines">${lines.map((line, i) =>
         `<li><span aria-hidden="true">${resultStyle === 'guess' ? 'ABC'[i] : ['↗', '☾', '✦'][i]}</span>${escape(line)}</li>`).join('')}</ol>` : ''}
-      <footer>${escape(packName())} <span>✿ Little Things</span></footer>
+      <footer>${escape(packName())} <span>${brandFlower} Little Things</span></footer>
     </article>`}
     ${sharedRecap ? `<div class="actions"><a href="./">${t('我也来答', 'Play Little Things')}</a></div>` :
     `<p class="sub recap-qr-note">${t('扫码的人可以看到你的全部答案。', 'Anyone who scans the QR can see all your answers.')}</p>` + roomPanel({ recap: true }) + myAnswerList()}${status}`;
@@ -623,7 +626,29 @@ async function drawRecapPreview(canvas, challenge = false) {
   const ink = '#1e2814';
   const family = getComputedStyle(document.body).fontFamily;
   function write(text, x, y, size, weight = 700, max = 804, alignCenter = false) {
-    ctx.font = `${weight} ${size}px ${text === "✿ Little Things" ? "Bricolage Grotesque, sans-serif" : family}`;
+    if (text === '✿ Little Things') {
+      // Same drawn flower as the page header, not the device's ✿ glyph.
+      const unit = size * 0.9 / 24;
+      const left = x;
+      const top = y - size * 0.78;
+      ctx.fillStyle = ink;
+      [[12, 6], [17.7, 10.1], [15.5, 16.9], [8.5, 16.9], [6.3, 10.1]].forEach(([cx, cy]) => {
+        ctx.beginPath();
+        ctx.arc(left + cx * unit, top + cy * unit, 4.6 * unit, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(left + 12 * unit, top + 12 * unit, 2.6 * unit, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = `${weight} ${size}px Bricolage Grotesque, sans-serif`;
+      ctx.fillStyle = ink;
+      const textX = x + size * 1.12;
+      ctx.fillText('Little Things', textX, y, max);
+      const metrics = ctx.measureText('Little Things');
+      return { top: y - metrics.actualBoundingBoxAscent, bottom: y + metrics.actualBoundingBoxDescent };
+    }
+    ctx.font = `${weight} ${size}px ${family}`;
     const segmenter = new Intl.Segmenter(lang === 0 ? 'zh' : 'en', { granularity: 'word' });
     const lines = [];
     let line = '';
@@ -654,7 +679,10 @@ async function drawRecapPreview(canvas, challenge = false) {
   try {
     await document.fonts.load(`800 48px ${family}`, lang === 0 ? '关于我的三件小事' : 'Little Things');
     await document.fonts.ready;
-    await avatarImages[avatar].decode();
+    // decode() can wait indefinitely while the page is in the background;
+    // an image that has already loaded can be drawn as it is.
+    const face = avatarImages[avatar];
+    if (!(face.complete && face.naturalWidth)) await face.decode();
     if (!canvas.isConnected) return;
     if (challenge) {
       drawChallengeCover(ctx, fill, ink, write);
@@ -664,6 +692,22 @@ async function drawRecapPreview(canvas, challenge = false) {
       qr.close();
     }
     if (!canvas.isConnected) return;
+    // A canvas cannot be long-pressed into Photos on a phone; an <img> can.
+    const still = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!canvas.isConnected) return;
+    if (still) {
+      const figure = canvas.closest('figure');
+      let img = figure.querySelector('.recap-still');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'recap-still';
+        canvas.after(img);
+      } else URL.revokeObjectURL(img.src);
+      img.src = URL.createObjectURL(still);
+      img.alt = canvas.getAttribute('aria-label') ?? '';
+      canvas.hidden = true;
+      canvas.recapBlob = still;
+    }
     canvas.closest('figure').setAttribute('aria-busy', 'false');
     canvas.parentElement.querySelector('figcaption').hidden = true;
     if (save) save.disabled = false;
@@ -939,14 +983,29 @@ function drawComicCover(ctx, qr, fill, ink, prompts, replies, write) {
   ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
 }
 
-function saveRecapImage() {
+async function saveRecapImage() {
   const canvas = document.getElementById('recap-preview');
   if (canvas.closest('figure').getAttribute('aria-busy') !== 'false' || !canvas.parentElement.querySelector('figcaption').hidden) return;
+  const blob = canvas.recapBlob;
+  if (!blob) return;
+  // Browsers cannot write to the photo library directly. On a phone the share
+  // sheet is the way there: it lists Save Image. Elsewhere, download the file.
+  const file = new File([blob], 'little-things-recap.png', { type: 'image/png' });
+  if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return;
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+    }
+  }
+  const url = URL.createObjectURL(blob);
   const download = document.createElement('a');
-  download.href = canvas.toDataURL('image/png');
-  download.download = 'little-things-recap.png';
+  download.href = url;
+  download.download = file.name;
   download.click();
-  message(t('图片已生成。', 'Image ready.'));
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(t('图片已保存。', 'Image saved.'));
 }
 
 function playerChip(player) {
