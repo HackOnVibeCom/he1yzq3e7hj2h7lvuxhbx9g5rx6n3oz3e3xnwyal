@@ -60,8 +60,14 @@ const quizStickerColors = [
   '#fff0b4', '#d5f3f5', '#daf4e0', '#ffdcd4'
 ];
 const paletteColor = name => recapPalettes[name]?.[0] ?? recapPalettes.orange[0];
+// Drawn question icons. Keyed by emoji so both question packs pick them up.
+const questionArt = {
+  '🍰': 'cake', '👋': 'wave', '📱': 'tablet', '✨': 'sparkles', '🍿': 'clapper',
+  '🌙': 'moon', '🎬': 'clapper', '🎧': 'headphones', '🔑': 'key'
+};
 const cornerSticker = (icon, color) =>
-  `<span class="sticker corner-sticker" style="--sticker-fill:${color}" aria-hidden="true">${icon}</span>`;
+  `<span class="sticker corner-sticker" style="--sticker-fill:${color}" aria-hidden="true">${
+    questionArt[icon] ? `<img src="./icons/${questionArt[icon]}.png" alt="">` : icon}</span>`;
 const frame = (body, illustration = '', style = '') =>
   `<section class="frame ${style}">${illustration}<div class="content">${body}</div></section>`;
 const status = '<p class="status" id="status" role="status"></p>';

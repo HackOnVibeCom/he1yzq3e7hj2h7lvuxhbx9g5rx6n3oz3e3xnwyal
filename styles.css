@@ -424,6 +424,7 @@ html[lang="zh-CN"] .option { font-weight: 400; line-height: 1.6; }
   font-size: 42px;
   border-radius: 22px;
 }
+.sticker img { width: 72%; height: 72%; object-fit: contain; }
 .art, .art.lime, .hero-art { background: var(--soft); border-bottom: 3px solid var(--ink); }
 .art.peach { background: var(--peach); }
 .hero-art img { position: relative; z-index: 1; }

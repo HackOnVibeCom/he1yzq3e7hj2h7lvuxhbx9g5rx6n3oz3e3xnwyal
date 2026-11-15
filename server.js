@@ -78,7 +78,6 @@ const assets = {
   '/vendor/qrcode.esm.js': ['vendor/qrcode.esm.js', 'text/javascript'],
   '/app.js': ['app.js', 'text/javascript'],
   '/page-scatter.js': ['page-scatter.js', 'text/javascript'],
-  '/quiz-icons.png': ['quiz-icons.png', 'image/png'],
   '/questions.js': ['questions.js', 'text/javascript'],
   '/challenge-cover.png': ['challenge-cover.png', 'image/png'],
   '/room-unavailable.png': ['room-unavailable.png', 'image/png'],
@@ -94,6 +93,13 @@ createServer(async (request, response) => {
     response.end(JSON.stringify(data));
   };
   try {
+    if (request.method === 'GET' && /^\/icons\/[a-z]+\.png$/.test(path)) {
+      try {
+        const image = readFileSync(new URL('.' + path, import.meta.url));
+        response.writeHead(200, { 'Content-Type': 'image/png' });
+        return response.end(image);
+      } catch { return send(404, { error: 'Not found' }); }
+    }
     if (request.method === 'GET' && /^\/avatars\/(?:[0-9]|1[0-9])\.webp$/.test(path)) {
       const image = readFileSync(new URL('.' + path, import.meta.url));
       response.writeHead(200, { 'Content-Type': 'image/webp' });

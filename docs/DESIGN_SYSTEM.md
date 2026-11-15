@@ -20,7 +20,7 @@
 8. **Tilt stickers a little:** −1.2°, +1°, −0.7°. Never beyond ±2.5° (avatar frame up to 5°).
 9. **Light headers only.** Page / card headers are `bg`, `paper` or `accent` with an optional zigzag bottom edge. Never a dark or ink header band.
 10. **Whole card is the tap target.** The call to action is a small ink corner tab ("Take a guess →"), not a big button.
-11. **Question art** uses the question’s emoji in a paper sticker. Player portraits use the 20 supplied sticker images.
+11. **Question art** uses the question’s drawn icon from `icons/` in a paper sticker. Player portraits use the 20 supplied sticker images.
 12. **One question = one sticker.** Small label (13–14px/700) above a big answer (38–42px/800), max two lines.
 
 ---
@@ -169,7 +169,7 @@ The local preview switches between screens and room states. The app has a single
 ## Current screen details
 
 - **Home** uses the Everyday Dilemmas illustration with a light halftone and an ink pill with lime text in the art’s upper right. The pack title sits on one line and the white area contains the subtitle and Start Quiz. The bilingual wordmark stays in the site header.
-- **Quiz cards** place the question emoji in a compact sticker that overlaps the top-left edge of the card. The title and controls sit within the card.
+- **Quiz cards** place the question’s drawn icon in a compact sticker that overlaps the top-left edge of the card. The title and controls sit within the card.
 - **Avatars** use the supplied set of 20 transparent stickers. Select a contrasting tile fill per sticker from the share palette. Keep each sticker’s tile fill consistent in the picker and the group reveal. On exported artwork the transparent sticker sits inside the card’s own frame and follows its color.
 - **Personal result** displays one Pop Cover. The export uses the same 900 × 1200 canvas as the preview. Keep the original staggered stickers, corner dots, heading/avatar alignment and footer-text/QR alignment. The selectable colors apply to the image only.
 - **Invites** use the inline room action. The fixed 1200 × 630 teaser is external link-preview artwork. The shared answer page has no header Share action.
@@ -185,7 +185,7 @@ Use the native disabled state. Replace the action color with a neutral fill (`#e
 
 ## Quiz and profile stickers
 
-Use an 84 × 84 px sticker overlapping the top-left edge of both the quiz and Sign your answers cards. Quiz stickers use the question emoji and an individual pastel fill. Sign your answers uses the flower mark on pale yellow. Leave 58 px between quiz progress and the card, and 68 px of top padding inside the card.
+Use an 84 × 84 px sticker overlapping the top-left edge of both the quiz and Sign your answers cards. Quiz stickers use the question’s drawn icon (`icons/*.png`) and an individual pastel fill. Sign your answers uses the flower mark on pale yellow. Leave 58 px between quiz progress and the card, and 68 px of top padding inside the card.
 
 ## Example ad
 
