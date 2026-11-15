@@ -1,3 +1,5 @@
+import { questions } from './questions.js';
+
 // Which three things a personal card says, and how it says them.
 //
 // Every line is written here, by rule. No model runs on this path: the card has
@@ -30,7 +32,7 @@ const ITEMS = [
 // answers[3][item] = fate, where fate 0 keeps it for life, 1 is one last time,
 // 2 is never again. So the item kept for life is the index holding fate 0.
 const itemWithFate = (assignment, fate) => ITEMS[assignment.indexOf(fate)];
-const box = answers => String(answers[7] ?? '').trim();
+const misplaced = answers => String(answers[7] ?? '').trim();
 const tabs = n => `${n} tab${n === 1 ? '' : 's'}`;
 
 const TABS_Q = ['我手机上开了多少个网页？', 'How many tabs are open in my phone browser?'];
@@ -68,11 +70,11 @@ const TRIGGERS = [
                   ['戴着耳机唱歌', 'Sing in headphones']] },
 
   { group: 'c4', punch: 86, covers: [4, 7],
-    when: a => a[4] === 0 && box(a) !== '',
-    line: a => [`剧透我一个字都不想听，但那个盒子里装的是什么，我知道：${box(a)}。`,
-                `I won't hear one word of a spoiler, but I know exactly what's in that box: ${box(a)}.`],
-    panel: a => [['剧透我一个字都不听。那盒子里是什么？', "I won't hear a spoiler. So what's in the box?"],
-                 [box(a), box(a)]] },
+    when: a => a[4] === 0 && misplaced(a) !== '',
+    line: a => [`剧透我一个字都不想听，但我老是在找${misplaced(a)}。`,
+                `No spoilers, please. I’m already busy looking for my ${misplaced(a)}.`],
+    panel: a => [['不听剧透。那我老是在找什么？', "No spoilers. What am I always looking for?"],
+                 [misplaced(a), misplaced(a)]] },
 
   // ---- Q3 · tabs. The widest range in the pack, so it carries the highest
   // ceiling of any single question. The magnitude is the joke, not the precision.
@@ -114,11 +116,11 @@ const TRIGGERS = [
     line: () => ['我最不想被拍到的，是两分钟里开了两次冰箱。', "The scene I'd cut: opening the fridge twice in two minutes."],
     panel: () => [CUT_Q, ['两分钟开两次冰箱', 'Opening the fridge twice']] },
 
-  // ---- Q8 · what's in the box. Skipping it produces no line, by design.
-  { group: 'q7', punch: 62, when: a => box(a) !== '',
-    line: a => [`要是有人把我这一年弄丢的东西收起来，能收到一盒${box(a)}。`,
-                `If someone boxed up what I lost this year, I'd get a box of ${box(a)}.`],
-    panel: a => [['我今年老弄丢的是什么？', 'What did I keep losing this year?'], [box(a), box(a)]] },
+  // ---- Q8 · misplaced items. Skipping it produces no line, by design.
+  { group: 'q7', punch: 62, when: a => misplaced(a) !== '',
+    line: a => [`我老是找不到${misplaced(a)}。`,
+                `I’m always looking for my ${misplaced(a)}.`],
+    panel: a => [['我老是在找什么？', 'What am I always looking for?'], [misplaced(a), misplaced(a)]] },
 
   // ---- Q2 · wrong person
   { group: 'q1', punch: 60, when: a => a[1] === 2,
@@ -163,11 +165,43 @@ const TRIGGERS = [
     panel: () => [HOUR_Q, ['晚上多玩一小时', "I'd save it for nighttime."]] }
 ];
 
+// The revised choices have different meanings, so older recaps use their
+// original triggers even though the answer indexes have the same shape.
+const UPDATED_TRIGGERS = [
+  ...TRIGGERS.filter(({ group }) => !['c1', 'c2', 'c3', 'q3', 'q6'].includes(group)),
+  {
+    group: 'q3',
+    punch: 75,
+    when: a => Array.isArray(a[3]) && a[3].includes(2),
+    line: a => [
+      `我送给仇人的超能力是：${questions[3].items[0][a[3].indexOf(2)]}。`,
+      `The superpower I gave my nemesis: ${questions[3].items[1][a[3].indexOf(2)]}.`
+    ],
+    panel: a => [
+      ['我给仇人送了什么超能力？', 'Which power would I give my nemesis?'],
+      [['躺下秒睡', 'Fall asleep instantly'], ['讲笑话从不冷场', 'Always get a laugh'], ['点菜从不踩雷', 'Always order the best dish']][a[3].indexOf(2)]
+    ]
+  },
+  {
+    group: 'q6',
+    punch: 64,
+    when: a => [0, 1, 2].includes(a[6]),
+    line: a => [
+      `这事儿很像我：${questions[6].options[0][a[6]]}`,
+      `Very me: ${questions[6].options[1][a[6]]}`
+    ],
+    panel: a => [
+      ['下面哪件事最像我？', 'What sounds most like me?'],
+      [['喜欢的歌单曲循环', 'I play songs on repeat'], ['点菜先看隔壁桌', 'I peek before I order'], ['见到小狗就打招呼', 'I say hi to cute dogs']][a[6]]
+    ]
+  }
+];
+
 /** The triggers that fire for one player, best first, one per group. */
-function chosen(answers, limit) {
+function chosen(answers, limit, version) {
   if (!Array.isArray(answers)) return [];
   const best = new Map();
-  for (const trigger of TRIGGERS) {
+  for (const trigger of version === 2 ? UPDATED_TRIGGERS : TRIGGERS) {
     let hit = false;
     try { hit = trigger.when(answers); } catch { hit = false; }
     if (!hit) continue;
@@ -182,9 +216,9 @@ function chosen(answers, limit) {
 }
 
 /** One sentence per finding, for the HTML card. `lang` is 0 Chinese, 1 English. */
-export function personalLines(answers, lang = 0, limit = 3) {
+export function personalLines(answers, lang = 0, limit = 3, version = 1) {
   const lines = [];
-  for (const trigger of chosen(answers, limit)) {
+  for (const trigger of chosen(answers, limit, version)) {
     // A half-filled answer set should cost one line, never the whole card.
     try { lines.push(trigger.line(answers, lang)[lang]); } catch { /* skip */ }
   }
@@ -192,9 +226,9 @@ export function personalLines(answers, lang = 0, limit = 3) {
 }
 
 /** Prompt and answer per finding, for the share image. */
-export function personalPanels(answers, lang = 0, limit = 3) {
+export function personalPanels(answers, lang = 0, limit = 3, version = 1) {
   const panels = [];
-  for (const trigger of chosen(answers, limit)) {
+  for (const trigger of chosen(answers, limit, version)) {
     try {
       const [prompt, reply] = trigger.panel(answers, lang);
       panels.push({ prompt: prompt[lang], reply: reply[lang] });

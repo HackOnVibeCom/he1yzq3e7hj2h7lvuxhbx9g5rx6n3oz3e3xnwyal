@@ -19,7 +19,9 @@ How a submitted answer becomes a line someone wants to screenshot. Every line he
 | 6 | 这段剪掉 · Cut that scene | `0` phone · `1` fridge · `2` singing |
 | 7 | 盒子里有啥 · What's in the box | string; `""` means skipped |
 
-Q4 items are `0` waking up without an alarm, `1` favorite dish, `2` laughing with friends. Q4 fates are `0` keep for life, `1` one last time, `2` never again.
+For legacy rounds, Q4 items are `0` waking up without an alarm, `1` favorite dish, `2` laughing with friends. Q4 fates are `0` keep for life, `1` one last time, `2` never again.
+
+For new rounds, Q4 uses superpowers (fall asleep instantly, land the punchline, order the best dish) and recipients (self, friend, nemesis). Q7 uses three distinct habits (repeat a song, peek at nearby tables, greet a dog). The recap uses copy for the round's pack version.
 
 ## How a card is built
 

@@ -39,29 +39,25 @@ You’re halfway through a wave when you realize it’s the wrong person. What d
 
 How many tabs are open in your phone browser right now? A guess is fine.
 
-### 4. 只能留一个 · Keep one for life
+### 4. 超能力分给谁 · Superpower swap
 
-睡到自然醒、吃最爱吃的菜、跟朋友笑到肚子疼。哪样留下，哪样只能再来一次，哪样从此没了？
+三个超能力，留一个给自己，送一个给朋友，再送一个给仇人。你怎么分？
 
-- 一辈子都能有
-- 再来最后一次
-- 以后再也没有
+You get three superpowers. Keep one, give one to a friend, and give one to your nemesis. Who gets what?
 
-Sleeping in until you wake up on your own, eating your favorite dish, laughing with friends until your stomach hurts. Give each one a different fate.
-
-- Keep it for life
-- One last time
-- Never again
+- 躺下秒睡 / Fall asleep instantly
+- 每次都能把人逗笑 / Always land the punchline
+- 次次点中最好吃的菜 / Always order the best dish
 
 ### 5. 剧透 · Spoilers
 
-朋友问：「要不要我告诉你电影结局？」
+电影看到一半，朋友问你：「要不要我直接剧透结局？」
 
 - 别说，一个字都别说。
 - 先给点提示，我再想想。
 - 快说，我就爱听剧透。
 
-A friend offers to tell you how the movie ends. What do you say?
+You’re halfway through a movie. Your friend asks, “Want me to spoil the ending?”
 
 - Don’t say a word.
 - Give me a hint, then I’ll decide.
@@ -79,27 +75,23 @@ You get a free hour every day. Would you rather sleep in for an hour or have an 
 - Sleep in for an hour.
 - Take the extra hour at night.
 
-### 7. 这段剪掉 · Cut that scene
+### 7. 哪件最像你 · Sounds like me
 
-有人跟拍你一天，只能剪掉一段。你剪哪段？
+下面哪件事最像你会干的？
 
-- 一边找手机，一边拿着手机。
-- 打开冰箱看一眼，过两分钟又去看。
-- 戴着耳机唱歌，还以为自己唱得很小声。
+Which of these sounds most like you?
 
-A camera follows you around for a day. You can cut one scene. Which one?
+- 听到喜欢的歌就单曲循环。 / Play a song on repeat as soon as I like it.
+- 点菜前先看别人桌上吃什么。 / Peek at other tables before I order.
+- 看到可爱的狗就想跟它打招呼。 / Say hi to every cute dog I see.
 
-- Looking for my phone while holding it.
-- Opening the fridge, then checking it again two minutes later.
-- Singing with headphones on, thinking I’m being quiet.
+### 8. 老是找不着 · Always looking for
 
-### 8. 盒子里有啥 · What’s in the box?
-
-盒子里装着一样你这一年老找不着的小东西。你猜是啥？
+有什么小东西，你老是找不着？
 
 写一样就行。想不到可以跳过。
 
-This box holds something small you kept misplacing this past year. What do you think it is?
+What’s one small thing you’re always looking for?
 
 Name one thing, or skip.
 
@@ -115,3 +107,5 @@ Name one thing, or skip.
 完整的触发条件、模板和优先级见 [RESULT_COPY.md](RESULT_COPY.md)。个人卡用实际答案写成简短的第一人称句子。群体页按题比较，AI 可以把同一房间的答案串成一句聊天提示。选项文案和结果文案可以不同，结果要保留原意。标签页数字可能是估的，跳过的题不计入比较。
 
 Every generated line, with its trigger and priority, is specified in [RESULT_COPY.md](RESULT_COPY.md). Personal cards turn actual answers into short first-person lines. Group results compare answers by question, and AI can connect answers from the same room into a conversation starter. Result copy can differ from option labels while preserving their meaning. Tab counts may be estimates. Exclude skipped answers from comparisons.
+
+Existing rounds keep their original Q4 and Q7. New rounds use the questions above.

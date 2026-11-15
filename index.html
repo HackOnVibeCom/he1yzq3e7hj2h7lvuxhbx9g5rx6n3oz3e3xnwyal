@@ -6,24 +6,25 @@
 <meta name="theme-color" content="#f9f7f0">
 <title>Little Things</title>
 <meta name="description" content="Eight small questions. Answer them, then see how your friends answered.">
-<!-- Static preview card. The local dev server swaps in the player's name for a
-     challenge link; the deployed site cannot, because link previews are scraped
-     without running JavaScript and there is no server to rewrite the page. -->
+<!-- Fixed preview for round invitations. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Little Things">
-<meta property="og:title" content="Guess what I picked">
-<meta property="og:description" content="Would I give you the last bite? Eight small questions.">
+<meta property="og:title" content="Everyday Dilemmas · Little Things">
+<meta property="og:description" content="A friend invited you to play eight questions. Answer whenever you like.">
 <meta property="og:url" content="https://he1yzq3e7hj2h7lvuxhbx9g5rx6n3oz3e3xnwyal.charliezhang0731.workers.dev/">
-<meta property="og:image" content="https://he1yzq3e7hj2h7lvuxhbx9g5rx6n3oz3e3xnwyal.charliezhang0731.workers.dev/challenge-cover.png">
+<meta property="og:image" content="https://he1yzq3e7hj2h7lvuxhbx9g5rx6n3oz3e3xnwyal.charliezhang0731.workers.dev/invite-preview.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Little Things. You ask for the last bite of my favorite dish. What do I say?">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 <script type="module" src="./app.js"></script>
 </head>
 <body>
-<header class="top"><a class="brand" href="./"><span aria-hidden="true">✿</span> Little Things</a><div class="header-actions"><button class="button header-share" id="header-share" type="button"></button><button class="language" id="language" type="button"></button></div></header>
+<header class="top"><a class="brand" href="./"><span aria-hidden="true">✿</span> Little Things</a><div class="header-actions"><button class="button header-share" id="header-share" type="button"></button><div class="language-toggle" id="language" role="group" aria-label="Language">
+  <button type="button" data-language="1" lang="en" aria-label="English" aria-pressed="true">EN</button>
+  <button type="button" data-language="0" lang="zh-CN" aria-label="中文" aria-pressed="false">中文</button>
+</div></div></header>
 <main id="app"></main>
-<dialog id="share-dialog" aria-labelledby="share-title"></dialog>
 </body>
 </html>

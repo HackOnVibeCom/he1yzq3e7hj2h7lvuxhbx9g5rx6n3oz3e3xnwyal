@@ -1,0 +1,31 @@
+flowchart LR
+  home["Home · pack cover · Start Quiz"]
+  cover["Invite cover · spots left · Start Quiz"]
+  quiz["Quiz · Q1–Q8 · Corner sticker · Back / Continue / Skip Q8"]
+  profile["Sign your answers · nickname · avatar · Submit"]
+  recap["Personal recap · poster · colors · QR · Save image"]
+  actions["Room actions · spots left · Copy invite link"]
+  full["Example ad · progress · countdown"]
+  done["Ad complete · Done · automatic return after 2 seconds"]
+  preview["Chat preview · fixed last-bite teaser"]
+  solo["My answers · eight answers in every recap state"]
+  results["Group results · ← My recap · Compare answers · Copy invite link · See my recap"]
+  shared["Shared recap · name · avatar · eight answers"]
+  home -->|"Create round"| quiz
+  cover -->|"Join round"| quiz
+  quiz --> profile --> recap
+  quiz --> actions
+  profile --> actions
+  recap --> actions
+  recap -->|"Scroll below room actions"| solo
+  recap -->|"Viewer submitted · 2+ answers · See group results"| results
+  results -->|"See my recap"| recap
+  results --> actions
+  actions -->|"Spots left · copy and share"| preview
+  actions -->|"Full · Watch an ad to unlock a spot"| full
+  full -->|"Local completion · +1 spot"| done
+  done -->|"Return · copy invite · toast"| actions
+  full -->|"Close early or hosted Back"| actions
+  preview -->|"Friend opens link"| cover
+  recap -->|"Scan poster QR"| shared
+  shared -->|"Try the same quiz"| home

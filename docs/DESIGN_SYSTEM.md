@@ -1,6 +1,6 @@
 # Little Things — Design System
 
-**Product:** Little Things is a game-like "What Would You Pick?" app. Friends answer eight questions, then guess each other's answers. This system covers its shareable surfaces: the **recap card**, the **link preview** (1200×630) and the **room reveal** results page.
+**Product:** Little Things is a game-like "What Would You Pick?" app. Friends answer eight questions, then guess each other's answers. This system covers its sharing and results surfaces: the **recap card**, the **link preview** (1200×630) and the **room reveal** results page.
 
 **One-line style:** *Pop-comic / neo-brutalist stickers on a pastel ground.* Thick ink outlines, hard offset shadows, halftone dots, zigzag paper edges, slightly tilted stickers, one chunky rounded grotesque (Bricolage Grotesque for English and Smiley Sans for Chinese). Friendly and loud, never dark or corporate.
 
@@ -129,23 +129,26 @@ Users have avatars (Duolingo-style flat characters: fox, cat, ghost, frog, chick
 - Brand row top-left: little flower mark + "Little Things".
 - Title **"Three things about Mia"**: 40px/800, max-width ≈ 280, one ink color. Avatar (starburst circle, 76px) at the right of the title.
 - Three tilted **stickers** stacked (see Shape language): label 14/700 over answer 38–42/800. Halftone dots peek out top-right and bottom-left of the sticker column, never under text.
-- Footer: QR code in a paper box at the right; at the left, "Scan to view the recap" (13/700), "What Would You Pick?" (22/800), "Eight questions to play with friends." (13/600).
+- Footer: QR code in a paper box at the right; at the left, "Scan to see all my answers" (13/700), "What Would You Pick?" (22/800), "Eight questions to play with friends." (13/600).
 
-### 2. Link preview — 1200×630 (chat / social share)
-- 24px `mat` around a **1152×582** card: `bg` ground, 6px ink border, radius 44, shadow `0 10px 0 ink`.
-- Brand top-left (left 44, top 36, 34px). **No eyebrow line** above the question.
-- Question **display-xl 88/0.98**, left 44, top ≈ 172, max-width ≈ 760 (e.g. "Would I give you the last bite?").
-- **Option chips** in one row, **anchored bottom-left** (left 44, bottom 44, gap 18, chip text 32). Never floating just under the question.
-- Right: avatar in a **tilted square** frame (≈250px, right 84, top 110) + "?" starburst (≈120px, right 44, top 60); halftone dots in the top-right behind them, fading toward the left.
-- **Corner tab** "Take a guess →" at the bottom-right. The whole card is the link.
+### 2. Room invite link preview — 1200×630 (chat / social share)
 
-### 3. Room reveal (results page) — 430px wide, compact (~1950px tall)
-- Header: title **"The room reveal"** 46px/800, "5 submitted" pill. Lime summary card (hero stats "0/5" and "5", row of PersonTiles). A speech bubble ("Keep talking") for the discussion prompt.
-- Sections are numbered (badge in `accent`, heading 28/800) and separated by the **zigzag rule**.
-- **Pick-an-option question:** one 38px **segmented bar** (flex by vote count; fills bg / pink / peach, 3px dividers), then an option card per answer in the same fill: count pill (`n/5`) and voters as name pills.
-- **Number question:** inline **leaderboard** rows in a paper panel: tile 34, name, 16px bar (leader solid ink, others `bg` with an ink end-cap), value 26/800; rows separated by 2.5px dashed ink lines.
-- **"Fate" question:** one grid; header cells **Keep it for life / One last time / Never again** (bg / pink / peach), then per item a title (15/800) and three same-colored cells holding stacked 30px tiles with names.
-- All panels: paper, 3px ink border, radius 18–22, shadow `4px 4px 0 ink`.
+- Lime background, dark outline, hard shadow, Little Things wordmark and one last-bite question.
+- Anchor three option chips bottom-left. Place a question-mark starburst over halftone dots on the right.
+- Use **Play this round →** in the bottom-right tab. The link opens the invite cover.
+- The fixed preview uses the question and options without any player avatar, nickname or selected answer.
+
+### 3. Room reveal (results page)
+
+- Below the title, show the live submission count and a plain roster with avatars and names of submitted players.
+- Number and separate question sections with the zigzag rule.
+- Use the same choice-question layout for all room sizes. Group each player under the option they picked. Show the count strip only for rounds of three or more. Keep the avatar and name together without an outer pill.
+- Keep the numeric question as a ranked bar chart. For assignments, use compact, centered ink pills with lime text for column headings and center each avatar/name pair within its cell.
+- Use a light **← My recap** return action at the top. Put the primary invite action above **See my recap** at the bottom.
+
+### 4. Shared recap and solo answers
+
+Use the revised screen 18 question layout to present a single player’s nickname, avatar and eight answers. It is the public destination for the poster QR or recap link. **Try the same quiz** opens the pack cover. Reuse the numbered question sections, choice cards and assignment colors in every Personal recap state. A single-player number displays as a value. Choice positions use lime, pink and orange. Numeric and free-text answers use paper. Q4 colors identify the three recipient columns.
 
 ---
 
@@ -159,17 +162,35 @@ Users have avatars (Duolingo-style flat characters: fox, cat, ghost, frog, chick
 
 ## Application screens and local preview
 
-The home, room, quiz, nickname entry, results and missing-room state share the lime accent, warm paper, dark-green ink and hard shadows. The home keeps the original 3D dice art. Preserve the bilingual wordmark and use normal Chinese tracking with looser line height than English. In the recap, align the avatar to the visible vertical center of the title block and the QR to the vertical center of the three footer lines.
+The home, room, quiz, nickname entry, results and missing-room state share the lime accent, warm paper, dark-green ink and hard shadows. The home uses the Everyday Dilemmas illustrated cover. Preserve the bilingual wordmark and use normal Chinese tracking with looser line height than English. In the recap, align the avatar to the visible vertical center of the title block and the QR to the vertical center of the three footer lines.
 
 The local preview switches between screens and room states. The app has a single default palette. Share artwork has its own unlabeled color swatches, with a ring and check to show selection.
 
 ## Current screen details
 
-- **Home** uses the original dice illustration with a light halftone and an ink pill with lime text in the art’s upper right. The pack title sits on one line and the white area contains the subtitle and Start Quiz. The bilingual wordmark stays in the site header.
-- **Question headers** use the question’s own emoji and a rotating fill from the share palette. Both elongated four-point stars on a banner use the same accent, chosen to contrast with that banner rather than the app’s lime. Preserve the question-specific fill on mobile.
+- **Home** uses the Everyday Dilemmas illustration with a light halftone and an ink pill with lime text in the art’s upper right. The pack title sits on one line and the white area contains the subtitle and Start Quiz. The bilingual wordmark stays in the site header.
+- **Quiz cards** place the question emoji in a compact sticker that overlaps the top-left edge of the card. The title and controls sit within the card.
 - **Avatars** use the supplied set of 20 transparent stickers. Select a contrasting tile fill per sticker from the share palette. Keep each sticker’s tile fill consistent in the picker and the group reveal. On exported artwork the transparent sticker sits inside the card’s own frame and follows its color.
 - **Personal result** displays one Pop Cover. The export uses the same 900 × 1200 canvas as the preview. Keep the original staggered stickers, corner dots, heading/avatar alignment and footer-text/QR alignment. The selectable colors apply to the image only.
-- **Share** stays in the sticky site header. A native dialog contains the invite action and, after submission, the landscape guessing thumbnail. The thumbnail is 1200 × 630 with the question as the headline and short choices along the bottom. It lives in the dialog.
+- **Invites** use the inline room action. The fixed 1200 × 630 teaser is external link-preview artwork. The shared answer page has no header Share action.
 - **Group reveal** preserves the two-player split and larger-room vote distributions, with the same comic surface styles for both.
 
 Implementation is in `public/styles.css` and `public/app.js`. Avatar assets are in `public/avatars/`.
+
+
+## Disabled buttons
+
+Use the native disabled state. Replace the action color with a neutral fill (`#e5e1d7`), use a muted but legible label (`#5c5a50`) and a softer border (`#b6b0a1`), and remove the hard shadow. Keep the button dimensions. Disabled buttons have no press movement.
+
+
+## Quiz and profile stickers
+
+Use an 84 × 84 px sticker overlapping the top-left edge of both the quiz and Sign your answers cards. Quiz stickers use the question emoji and an individual pastel fill. Sign your answers uses the flower mark on pale yellow. Leave 58 px between quiz progress and the card, and 68 px of top padding inside the card.
+
+## Example ad
+
+Use a full-screen dialog to preserve the quiz or result page underneath. The test state puts **Example ad** inside the animated artwork. The progress bar and countdown sit at the top. The ad fills the remaining viewport, with the reward explanation above the title. Show the primary **Done** button only after completion. Return automatically after two seconds and use a toast to confirm the reward.
+
+## Language control
+
+Show both **EN** and **中文** as header chips. The active language uses ink fill and lime text. Switch to a dropdown when a third language is supported.

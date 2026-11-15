@@ -46,15 +46,15 @@ Supabase directly, which is why a plain static host is enough.
 ### First-time database setup
 
 1. In the Supabase dashboard, open **SQL Editor → New query**, paste
-   [`supabase/schema.sql`](supabase/schema.sql) and run it. It creates the two
-   tables and the three functions the app calls.
+   [`supabase/schema.sql`](supabase/schema.sql) and run it. It creates the room
+   tables and functions the app calls. Run it again on an existing project before
+   deploying the updated room flow. It backfills seats for existing submissions and preserves the earlier question pack for existing rooms.
 2. Copy the project URL and the **anon / publishable** key from
    **Project Settings → API Keys** into [`config.js`](config.js).
 
 Both of those values are public by design — the anon key ships in the browser.
-Row level security is on for both tables with no policies, so that key cannot read
-or write a table directly; it can only call the three `security definer` functions,
-which hold the rules. The `service_role` key must never go in this repository.
+Row level security is on for the room tables. The browser uses the
+`security definer` room functions to join, submit, and read results. The `service_role` key must never go in this repository.
 
 ## Running it locally
 
@@ -65,10 +65,9 @@ npm run dev
 Then open http://127.0.0.1:4188. No `npm install` needed — the server has no
 dependencies and the QR encoder is vendored in `vendor/`.
 
-With no key in `config.js`, the app falls back to the local Node server in
-`server.js`, which keeps rooms in `rooms.local.json`. **That file holds player
-tokens and is gitignored. Never commit or publish it.** Fill in the key and the
-same code path talks to Supabase instead.
+On localhost the app uses the Node server in `server.js`, which keeps rooms in
+`rooms.local.json`. **That file holds player tokens and is gitignored. Never
+commit or publish it.** The deployed app uses Supabase when configured.
 
 To play as two people on one computer, open the invite link in a normal window and
 a private window.
@@ -85,7 +84,7 @@ It uses sample answers in memory and does not create rooms.
 | `questions.js` | The eight questions, both languages |
 | `storage.js` | The only file that knows where rooms are kept |
 | `config.js` | Supabase project URL and anon key |
-| `supabase/schema.sql` | Tables, access rules, and the three callable functions |
+| `supabase/schema.sql` | Tables, access rules, and the callable room functions |
 | `vendor/qrcode.esm.js` | QR encoder, bundled from `qrcode@1.5.4` (MIT) |
 | `server.js` | Local playtest server only. Not used in production |
 

@@ -1,4 +1,4 @@
-export const questions = [
+export const legacyQuestions = [
   {
     "kind": "choice",
     "icon": "🍰",
@@ -103,8 +103,8 @@ export const questions = [
       "Spoilers"
     ],
     "prompt": [
-      "朋友问：「要不要我告诉你电影结局？」",
-      "A friend offers to tell you how the movie ends. What do you say?"
+      "电影看到一半，朋友问你：「要不要我直接剧透结局？」",
+      "You’re halfway through a movie. Your friend asks, “Want me to spoil the ending?”"
     ],
     "options": [
       [
@@ -167,14 +167,14 @@ export const questions = [
   },
   {
     "kind": "text",
-    "icon": "📦",
+    "icon": "🔑",
     "title": [
-      "盒子里有啥",
-      "What’s in the box?"
+      "老是找不着",
+      "Always looking for"
     ],
     "prompt": [
-      "盒子里装着一样你这一年老找不着的小东西。你猜是啥？",
-      "This box holds something small you kept misplacing this past year. What do you think it is?"
+      "有什么小东西，你老是找不着？",
+      "What’s one small thing you’re always looking for?"
     ],
     "hint": [
       "写一样就行。想不到可以跳过。",
@@ -182,3 +182,34 @@ export const questions = [
     ]
   }
 ];
+
+export const questions = legacyQuestions.map((question, index) => {
+  if (index === 3) return {
+    ...question,
+    title: ['超能力分给谁', 'Superpower swap'],
+    prompt: [
+      '三个超能力，留一个给自己，送一个给朋友，再送一个给仇人。你怎么分？',
+      'You get three superpowers. Keep one, give one to a friend, and give one to your nemesis. Who gets what?'
+    ],
+    options: [
+      ['留给自己', '送给朋友', '送给仇人'],
+      ['For me', 'For a friend', 'For my nemesis']
+    ],
+    items: [
+      ['躺下秒睡', '每次都能把人逗笑', '次次点中最好吃的菜'],
+      ['Fall asleep instantly', 'Always land the punchline', 'Always order the best dish']
+    ],
+    itemIcons: ['🌙', '💬', '🍴']
+  };
+  if (index === 6) return {
+    ...question,
+    icon: '🎧',
+    title: ['哪件最像你', 'Sounds like me'],
+    prompt: ['下面哪件事最像你会干的？', 'Which of these sounds most like you?'],
+    options: [
+      ['听到喜欢的歌就单曲循环。', '点菜前先看别人桌上吃什么。', '看到可爱的狗就想跟它打招呼。'],
+      ['Play a song on repeat as soon as I like it.', 'Peek at other tables before I order.', 'Say hi to every cute dog I see.']
+    ]
+  };
+  return question;
+});

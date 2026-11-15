@@ -1,6 +1,11 @@
-import { questions } from './questions.js';
-import { createRoom, readRoom, submitAnswers, qrDataUrl } from './storage.js';
+import { mountPageScatter } from './page-scatter.js';
+import { questions as currentQuestions, legacyQuestions } from './questions.js';
+let questions = currentQuestions;
+const usePackVersion = version => { questions = version === 2 ? currentQuestions : legacyQuestions; };
+import { createRoom, joinRoom, readRoom, submitAnswers, unlockExampleSpot, qrDataUrl } from './storage.js';
 import { personalLines, personalPanels } from './triggers.js';
+
+mountPageScatter();
 
 const app = document.querySelector('#app');
 const language = document.querySelector('#language');
@@ -11,7 +16,8 @@ let room = /^[a-f0-9]{24}$/.test(roomParam ?? '') ? roomParam : null;
 let lang = localStorage.getItem('little-things-language') === 'zh' ? 0 : 1;
 let screen = 'home';
 let index = 0;
-let roster = { count: 0, submissions: [] };
+let roster = { count: 0, joined: 0, capacity: 5, submissions: [] };
+const resultsReady = () => roster.submissions.length >= 2;
 let token = '';
 let answers = Array(questions.length).fill(null);
 let nickname = '';
@@ -49,21 +55,13 @@ const avatarColors = [
   'purple', 'cyan', 'mint', 'red', 'blue', 'yellow', 'orange', 'mint', 'pink', 'purple',
   'blue', 'yellow', 'orange', 'red', 'cyan', 'yellow', 'mint', 'pink', 'blue', 'purple'
 ];
-const questionColors = [
-  ['pink', '#6633bd'],
-  ['orange', '#254fc3'],
-  ['blue', '#ac3612'],
-  ['purple', '#8c3900'],
-  ['yellow', '#6530bd'],
-  ['cyan', '#a92b38'],
-  ['mint', '#ab2163'],
-  ['red', '#173eaa']
+const quizStickerColors = [
+  '#ffdae7', '#ffe1ba', '#dbe9ff', '#e9ddff',
+  '#fff0b4', '#d5f3f5', '#daf4e0', '#ffdcd4'
 ];
 const paletteColor = name => recapPalettes[name]?.[0] ?? recapPalettes.orange[0];
-const art = (icon, colors) => {
-  const style = colors ? `style="--art-bg:${paletteColor(colors[0])};--star-color:${colors[1]}"` : '';
-  return `<div class="art" ${style} aria-hidden="true"><span class="sticker">${icon}</span></div>`;
-};
+const cornerSticker = (icon, color) =>
+  `<span class="sticker corner-sticker" style="--sticker-fill:${color}" aria-hidden="true">${icon}</span>`;
 const frame = (body, illustration = '', style = '') =>
   `<section class="frame ${style}">${illustration}<div class="content">${body}</div></section>`;
 const status = '<p class="status" id="status" role="status"></p>';
@@ -85,18 +83,10 @@ function avatarPicker() {
     </label>`).join('')}</div></fieldset>`;
 }
 
-// Rooms live wherever storage.js says they do: Supabase on the deployed site,
-// the local Node server during `npm run dev`. Every call site below is unchanged.
-async function api(path, method = 'GET', body) {
-  if (path === '') return { id: await createRoom() };
-  const id = path.slice(1);
-  if (method === 'POST') return submitAnswers(id, body);
-  return readRoom(id, token);
-}
-
 function loadPlayer() {
   const key = 'little-things:' + room;
-  const player = JSON.parse(localStorage.getItem(key) || '{}');
+  let player = {};
+  try { player = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch {}
   token = player.token || Array.from(crypto.getRandomValues(new Uint8Array(18)), byte => byte.toString(16).padStart(2, '0')).join('');
   if (player.answers) answers = player.answers;
   nickname = player.nickname || '';
@@ -113,7 +103,7 @@ function show(next) {
   screen = next;
   const picker = document.getElementById('preview-page');
   if (picker) {
-    picker.value = next === 'quiz' ? 'q' + index : next === 'personal' && roster.count > 1 ? 'personal-ready' : next === 'group' ? (roster.count < 2 ? 'waiting' : roster.count > 2 ? 'crowd' : 'group') : next;
+    picker.value = next === 'quiz' ? 'q' + index : next === 'personal' && roster.joined > 1 ? (resultsReady() ? (roster.count < roster.joined ? 'personal-partial' : 'personal-ready') : 'waiting') : next === 'group' ? (roster.count < roster.joined ? 'group-partial' : roster.count > 2 ? 'crowd' : 'group') : next;
     document.getElementById('preview-prev').disabled = picker.selectedIndex === 0;
     document.getElementById('preview-next').disabled = picker.selectedIndex === picker.options.length - 1;
   }
@@ -122,76 +112,215 @@ function show(next) {
   app.querySelector('h1')?.focus({ preventScroll: true });
 }
 
-async function start(copyInvite = false) {
+async function start() {
   if (debug) {
-    if (copyInvite) return invite();
     index = 0;
+    roster = { count: 0, joined: 1, capacity: 5, submissions: [] };
     return show('quiz');
   }
   if (busy) return;
   busy = true;
+  const control = document.getElementById('start');
+  if (control) control.disabled = true;
   try {
     if (!room) {
-      ({ id: room } = await api('', 'POST'));
+      room = await createRoom();
       history.replaceState(null, '', '?room=' + room);
       loadPlayer();
     }
-    if (copyInvite) await invite();
+    const { joined } = await joinRoom(room, token);
+    if (!joined) {
+      await refreshRoom().catch(() => {});
+      message(t('这局已经满员了。', 'This round is full.'));
+      return;
+    }
+    roster = await readRoom(room, token);
+    usePackVersion(roster.packVersion);
+    if (roster.submitted) show('personal');
     else show('quiz');
   } catch {
-    const error = t('没建成房间，再试一次。', 'Couldn’t create a room. Try again.');
-    if (copyInvite && shareDialog.open) document.getElementById('share-status').textContent = error;
-    else message(error);
+    message(t('没能开始答题，再试一次。', 'Couldn’t start the quiz. Try again.'));
   } finally {
     busy = false;
+    if (control) control.disabled = false;
   }
 }
 
-const shareDialog = document.querySelector('#share-dialog');
 const headerShare = document.querySelector('#header-share');
 
-function openShare() {
-  const completed = !sharedRecap && ['personal', 'group'].includes(screen);
-  const copyLabel = sharedRecap || screen === 'missing' ? t('复制页面链接', 'Copy page link') : t('复制邀请链接', 'Copy invite link');
-  const submitted = debug && screen !== 'home' && !screen.startsWith('missing') ? roster.submissions.slice(0, 5) : [];
-  const seats = debug && !sharedRecap ? `<div class="share-seats" aria-hidden="true">${Array.from({ length: 5 }, (_, i) =>
-    `<span>${submitted[i] ? avatarIcon(submitted[i].avatar) : i === 0 ? t('你', 'You') : '+'}</span>`).join('')}</div>
-    <p class="sub">${t('五人房预览 · 人数上限待定', 'Five-seat demo · limit to be decided')}</p>` : '';
-  shareDialog.innerHTML = `<form method="dialog"><button class="button share-close" aria-label="${t('关闭', 'Close')}">×</button></form>
-    <h2 id="share-title">${t('分享给好友', 'Share with friends')}</h2>
-    ${sharedRecap ? '' : `<p class="sub">${t('朋友可以晚点答，你可以接着玩。', 'Friends can play later. You can keep going.')}</p>`}
-    ${seats}
-    ${completed ? `<figure class="recap-export challenge-preview share-thumbnail" aria-busy="true">
-      <canvas id="challenge-thumbnail" role="img" aria-label="${escape(resultCards().guess.title)}"></canvas>
-      <figcaption>${t('正在生成链接预览…', 'Preparing link preview…')}</figcaption>
-    </figure>` : ''}
-    <div class="actions">${button('copy-invite', copyLabel, 'primary')}
-    ${completed ? button('copy-challenge', t('复制猜题链接', 'Copy challenge link')) : ''}</div>
-    <p id="share-status" class="status" role="status"></p>`;
-  linkAction('copy-invite', () => screen === 'home' && !sharedRecap ? start(true) : invite());
-  linkAction('copy-challenge', () => copyShareLink(challengeLink()));
-  if (!shareDialog.open) shareDialog.showModal();
-  const thumbnail = document.getElementById('challenge-thumbnail');
-  if (thumbnail) drawRecapPreview(thumbnail, true);
+function roomPanel({ recap = false } = {}) {
+  return `<section class="round-panel" aria-label="${t('本局', 'This round')}">
+    <div class="round-summary">
+      <p class="round-counts" id="round-counts" role="status"></p>
+      ${recap ? `<button type="button" class="button recap-save" id="save-recap" aria-label="${t('保存图片', 'Save image')}" disabled>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/>
+        </svg><span>${t('保存图片', 'Save image')}</span>
+      </button>` : ''}
+    </div>
+    <div class="round-actions${recap ? ' recap-actions' : ''}">
+      ${recap ? button('group', t('查看群体结果', 'See group results'), 'primary') : ''}
+      ${button('copy-invite', t('复制邀请链接', 'Copy invite link'))}
+    </div>
+    <p class="status" id="invite-status" role="status"></p>
+  </section>`;
 }
 
-async function copyShareLink(url) {
-  const feedback = document.getElementById('share-status');
+function updateRoomPanel() {
+  const count = document.getElementById('round-counts');
+  if (!count) return;
+  const { joined, capacity, count: submitted } = roster;
+  const spots = Math.max(0, capacity - joined);
+  const spotsLeft = t(`还剩 ${spots} 个位置`, `${spots} ${spots === 1 ? 'spot' : 'spots'} left`);
+  const friends = Math.max(0, joined - 1);
+  const players = friends === 0 ? t('只有你', 'Just you')
+    : t(`你和 ${friends} 位好友`, `You + ${friends} ${friends === 1 ? 'friend' : 'friends'}`);
+  const waiting = joined - submitted;
+  const submittedProgress = t(`已交卷 ${submitted}/${joined}`, `${submitted} of ${joined} submitted`);
+  const recapProgress = waiting <= 0 ? t('大家都交卷了', 'Everyone’s submitted')
+    : resultsReady() ? submittedProgress
+      : t(`还有 ${waiting} 位好友没交卷`, `Waiting for ${waiting} ${waiting === 1 ? 'friend' : 'friends'} to submit`);
+  const groupProgress = document.getElementById('group-progress');
+  if (groupProgress && groupProgress.textContent !== submittedProgress) groupProgress.textContent = submittedProgress;
+  const label = screen === 'invite'
+    ? `${t('好友已在这局', 'A friend is already in this round')} · ${spotsLeft}`
+    : screen === 'personal'
+      ? (joined <= 1 ? spotsLeft : `${recapProgress}\n${spotsLeft}`)
+      : `${players} · ${spotsLeft}`;
+  if (count.textContent !== label) count.textContent = label;
+  const copy = document.getElementById('copy-invite');
+  const results = document.getElementById('group');
+  if (copy) {
+    copy.classList.toggle('primary', spots === 0 || screen === 'group' || (screen === 'personal' && joined === 1));
+    const label = spots === 0 ? t('看广告加一个位置', 'Watch an ad to unlock a spot') : t('复制邀请链接', 'Copy invite link');
+    if (copy.textContent !== label) copy.textContent = label;
+  }
+  if (results) {
+    results.hidden = joined <= 1;
+    results.disabled = !resultsReady();
+  }
+  const start = document.getElementById('start');
+  if (start && screen === 'invite') start.disabled = spots === 0 && !roster.member;
+}
+
+async function copyLink(url, feedback) {
+  if (!feedback) return;
   try {
     await navigator.clipboard.writeText(url);
     feedback.textContent = t('链接已复制。', 'Link copied.');
+    return true;
   } catch {
     feedback.textContent = url;
+    return false;
   }
 }
 
+function roomInviteUrl() {
+  const url = new URL('./', location.href);
+  url.searchParams.set('room', room);
+  return url.href;
+}
+
 function invite() {
+  if (roster.joined >= roster.capacity) return openExampleAd();
+  const feedback = document.getElementById('invite-status');
   if (debug) {
-    document.getElementById('share-status').textContent =
-      t('正式答题时，这里会复制房间链接。', 'In a real round, this copies the room link.');
+    feedback.textContent = t('正式答题时，这里会复制邀请链接。', 'In a real round, this copies the invite link.');
     return;
   }
-  return copyShareLink(screen === 'missing' ? new URL('./', location.href).href : location.href);
+  return copyLink(roomInviteUrl(), feedback);
+}
+
+function showToast(text) {
+  document.getElementById('room-toast')?.remove();
+  const toast = document.createElement('div');
+  toast.id = 'room-toast';
+  toast.className = 'room-toast';
+  toast.setAttribute('role', 'status');
+  document.body.append(toast);
+  toast.textContent = text;
+  window.setTimeout(() => toast.remove(), 3200);
+}
+
+function openExampleAd() {
+  if (document.getElementById('example-ad')) return;
+  const ad = document.createElement('dialog');
+  ad.id = 'example-ad';
+  ad.setAttribute('aria-labelledby', 'example-ad-title');
+  ad.innerHTML = `<div class="example-ad-content">
+    <div class="example-ad-actions">
+      <div class="example-ad-playback">
+        <progress id="example-progress" max="5" value="0"
+          aria-label="${t('广告播放进度', 'Ad playback progress')}"></progress>
+        <span id="example-seconds" aria-hidden="true">5s</span>
+      </div>
+      <button type="button" class="button primary" id="exit-example-ad" hidden>${t('完成', 'Done')}</button>
+    </div>
+    <div class="example-ad-art">
+      <span aria-hidden="true">✦</span>
+      <p>${t('播完后，这局会多一个位置。', 'Finish watching to unlock one spot in this round.')}</p>
+      <h1 id="example-ad-title">${t('测试广告', 'Example ad')}</h1>
+    </div>
+  </div>`;
+  document.body.append(ad);
+  const exit = ad.querySelector('#exit-example-ad');
+  const progress = ad.querySelector('#example-progress');
+  let timer;
+  let autoReturn;
+  let granting = false;
+  let unlocked = false;
+  async function returnToRoom() {
+    if (!ad.open) return;
+    ad.close();
+    if (!unlocked) return;
+    const copied = !debug && await copyLink(roomInviteUrl(), document.getElementById('invite-status'));
+    showToast(copied ? t('增加了一个位置 · 链接已复制', '1 spot unlocked · Link copied')
+      : t('已增加一个位置', '1 spot unlocked'));
+  }
+  ad.addEventListener('close', () => {
+    window.clearInterval(timer);
+    window.clearTimeout(autoReturn);
+    ad.remove();
+  });
+  exit.addEventListener('click', returnToRoom);
+  ad.addEventListener('cancel', event => {
+    if (!granting && !unlocked) return;
+    event.preventDefault();
+    if (unlocked) returnToRoom();
+  });
+  ad.showModal();
+  if (!progress) return;
+  const attempt = crypto.randomUUID();
+  const start = performance.now();
+  timer = window.setInterval(async () => {
+    const elapsed = Math.min(5, (performance.now() - start) / 1000);
+    progress.value = elapsed;
+    ad.querySelector('#example-seconds').textContent = `${Math.ceil(5 - elapsed)}s`;
+    if (elapsed < 5) return;
+    window.clearInterval(timer);
+    granting = true;
+    try {
+      if (debug) {
+        roster.capacity += 1;
+        updateRoomPanel();
+        unlocked = true;
+      } else {
+        if (roomRequest) await roomRequest.catch(() => {});
+        ({ unlocked } = await unlockExampleSpot(room, token, attempt));
+        await refreshRoom();
+        if (!unlocked) throw new Error('No spot unlocked');
+      }
+      exit.hidden = false;
+      exit.focus();
+      autoReturn = window.setTimeout(returnToRoom, 2000);
+    } catch {
+      ad.close();
+      showToast(t('没能增加名额，再试一次。', 'Couldn’t unlock a spot. Try again.'));
+    } finally {
+      granting = false;
+    }
+  }, 100);
 }
 
 function valid(question, value) {
@@ -203,7 +332,7 @@ function valid(question, value) {
 
 function dealCard(label, item) {
   return `<button type="button" class="deal-card" data-item="${item}" aria-pressed="false">
-    <span aria-hidden="true">${['🌙', '🍴', '✦'][item]}</span> ${escape(label)}
+    <span aria-hidden="true">${(questions[3].itemIcons ?? ['🌙', '🍴', '✦'])[item]}</span> ${escape(label)}
   </button>`;
 }
 
@@ -212,13 +341,14 @@ function bindDeal(question) {
   let drag = null;
   let suppressClick = false;
   const board = app.querySelector('.options');
+  const hint = document.getElementById('deal-hint');
   function select(item) {
     selected = item === selected ? null : item;
     board.querySelectorAll('[data-item]').forEach(card => {
       card.setAttribute('aria-pressed', String(Number(card.dataset.item) === selected));
     });
     board.classList.toggle('is-dealing', selected !== null);
-    board.querySelector('#deal-hint').textContent = selected === null
+    hint.textContent = selected === null
       ? t('拖动卡片，或先点卡片，再点要放的位置。', 'Drag a card, or tap it and then tap a spot.')
       : t(`已选：${question.items[0][selected]}。点一个位置。`, `Selected: ${question.items[1][selected]}. Choose a spot.`);
   }
@@ -306,8 +436,7 @@ function quiz() {
         </button>
         ${item < 0 ? '' : dealCard(label, item)}
       </div>`;
-    }).join('')}</div>
-    <p class="status" id="deal-hint" role="status">${t('拖动卡片，或先点卡片，再点要放的位置。', 'Drag a card, or tap it and then tap a spot.')}</p>`;
+    }).join('')}</div>`;
   } else if (q.kind === 'number') {
     input = `<input type="number" class="field" id="answer" min="0" step="1" inputmode="numeric" aria-labelledby="title" value="${answer ?? ''}">`;
   } else {
@@ -315,10 +444,11 @@ function quiz() {
   }
   const next = q.kind === 'text' && !answer ? t('跳过', 'Skip') : t('继续', 'Continue');
   return `<div class="quizbar"><progress value="${index + 1}" max="8" aria-label="${t('答题进度', 'Quiz progress')}"></progress><span class="steps">${index + 1} / 8</span></div>` +
-    frame(`<p class="kicker">${q.title[lang]}</p><h1 id="title">${escape(q.prompt[lang])}</h1>
-    <fieldset class="options" aria-labelledby="title">${input}</fieldset>
-    <div class="actions">${index ? button('back', t('上一题', 'Back')) : ''}${button('next', next, 'primary')}</div>`, art(q.icon, questionColors[index])) +
-    status;
+    frame(`<h1 id="title">${escape(q.prompt[lang])}</h1>
+    ${q.kind === 'assign' ? `<p class="status" id="deal-hint" role="status">${t('拖动卡片，或先点卡片，再点要放的位置。', 'Drag a card, or tap it and then tap a spot.')}</p>` : ''}
+    <fieldset class="options" aria-labelledby="title" ${q.kind === 'assign' ? 'aria-describedby="deal-hint"' : ''}>${input}</fieldset>
+    <div class="actions">${index ? button('back', t('上一题', 'Back')) : ''}${button('next', next, 'primary')}</div>`, cornerSticker(q.icon, quizStickerColors[index]), 'quiz-frame corner-frame') +
+    roomPanel() + status;
 }
 
 function displayAnswer(q, value) {
@@ -332,6 +462,7 @@ let recapPalette = 'lime';
 
 
 let sharedRecap = false;
+let sharedAnswers = false;
 const recapPages = ['stat', 'poster', 'guess'];
 
 function resultCards() {
@@ -348,12 +479,19 @@ function resultCards() {
   return {
     stat: { title: String(answers[2]), lines: [], kicker: t('我手机里的标签页，大概就这么多。', 'About this many tabs open on my phone.') },
     poster: { title: ending, lines: [], kicker: t('朋友问我要不要听剧透，我说：', 'A friend offers to spoil the movie. My answer:') },
-    badge: { title: nickname, lines: personalLines(answers, lang), kicker: t('我的答题卡', 'My answer card') },
+    badge: { title: nickname, lines: personalLines(answers, lang, 3, questions === currentQuestions ? 2 : 1), kicker: t('我的答题卡', 'My answer card') },
     guess: { title: guess, lines: questions[0].options[lang], kicker: t('我最爱吃的菜就剩一口了，你问我能不能吃。我会怎么说？', 'You ask for the last bite of my favorite food. What do I say?') }
   };
 }
 
 function personal() {
+  if (sharedAnswers) return `<section class="room-reveal public-answers">
+    <header class="public-answer-heading">${avatarIcon(avatar)}
+      <h1>${t(`${escape(nickname)}的答案`, `${escape(nickname)}’s answers`)}</h1>
+    </header>
+    ${singlePlayerQuestions()}
+    <div class="actions"><a class="button primary try-quiz" href="./">${t('我也来答这套题', 'Try the same quiz')}</a></div>
+  </section>${status}`;
   const { title, lines, kicker } = resultCards()[resultStyle];
   const position = recapPages.indexOf(resultStyle);
   const recapNav = `<nav class="recap-nav" aria-label="${t('回顾翻页', 'Recap pages')}">
@@ -361,8 +499,8 @@ function personal() {
     <span>${position < 0 ? t('总览', 'Summary') : `${position + 1} / ${recapPages.length}`}</span>
     <button type="button" class="button" id="recap-next" aria-label="${t('下一张', 'Next card')}" ${position === recapPages.length - 1 ? 'disabled' : ''}>→</button>
   </nav>`;
-  const exportView = !sharedRecap && ['badge', 'guess'].includes(resultStyle);
-  const palette = exportView ? `<div class="recap-swatches" role="group" aria-label="${t('卡片配色', 'Card colors')}">
+  const exportView = resultStyle === 'badge';
+  const palette = exportView && !sharedRecap ? `<div class="recap-swatches" role="group" aria-label="${t('卡片配色', 'Card colors')}">
     ${Object.entries(recapPalettes).map(([id, [color, zh, en]]) =>
       `<button type="button" data-recap-palette="${id}" aria-label="${t(zh, en)}" aria-pressed="${recapPalette === id}" style="--swatch:${color}"></button>`).join('')}
     </div>` : '';
@@ -380,24 +518,29 @@ function personal() {
       <footer>${escape(packName())} <span>✿ Little Things</span></footer>
     </article>`}
     ${sharedRecap ? `<div class="actions"><a href="./">${t('我也来答', 'Play Little Things')}</a></div>` :
-    `<div class="actions">${exportView && resultStyle !== 'guess'
-      ? button('save-recap', t('保存图片', 'Save image'))
-      : resultStyle === 'guess' ? '' : button('open-summary', t('查看分享长图', 'Preview share image'))}
-      ${roster.count > 1 ? button('group', t('看看大家怎么答', 'See everyone’s answers'), 'primary')
-        : button('share-personal', t('分享给好友', 'Share with friends'), 'primary')}</div>
-      ${exportView ? `<p class="sub recap-note">${resultStyle === 'guess'
-      ? t('点开链接看题，回我 A、B 或 C。', 'Open the link to see the choices, then reply A, B or C.')
-      : t('长图包含昵称、头像和卡片上的三条答案。', 'The image includes your nickname, avatar and the three answers shown.')}</p>` : ''}
-      ${['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname) ? `<p class="sub recap-note">${t('这是本地预览，二维码需要公开网址才能在别人的手机上打开。', 'This is a local preview. The QR needs a public URL to open on another device.')}</p>` : ''}`}${status}`;
+    `<p class="sub recap-qr-note">${t('扫码的人可以看到你的全部答案。', 'Anyone who scans the QR can see all your answers.')}</p>` + roomPanel({ recap: true }) + myAnswerList()}${status}`;
 
+}
+
+function singlePlayerQuestions() {
+  const player = { nickname, avatar, answers };
+  return questions.map((question, index) => groupComparison(question, index, [player], index + 1)).join('');
+}
+
+function myAnswerList() {
+  return `<section class="solo-answers room-reveal" id="solo-answers" aria-labelledby="solo-answers-title">
+    <h2 id="solo-answers-title">${t('我的答案', 'My answers')}</h2>
+    ${singlePlayerQuestions()}
+  </section>`;
 }
 
 // The card is picked from all eight answers now, so the link carries all eight.
 // Links in the older five-field shape still open; they show the tab-count card,
 // which is all they ever had the data for.
 function recapLink() {
-  const url = new URL(location.pathname, location.origin);
-  url.hash = 'recap=' + encodeURIComponent(JSON.stringify([lang, nickname, avatar, answers]));
+  const url = new URL('./recap.html', location.href);
+  const kind = sharedRecap && !sharedAnswers ? 'recap' : 'answers';
+  url.hash = (questions === currentQuestions ? kind + '-v2=' : kind + '=') + encodeURIComponent(JSON.stringify([lang, nickname, avatar, answers]));
   return url.href;
 }
 
@@ -429,9 +572,10 @@ function openSharedRecap() {
       return true;
     } catch { return false; }
   }
-  if (!location.hash.startsWith('#recap=')) return false;
+  const recapPrefix = /^#(recap|answers)(-v2)?=/.exec(location.hash);
+  if (!recapPrefix) return false;
   try {
-    const data = JSON.parse(decodeURIComponent(location.hash.slice(7)));
+    const data = JSON.parse(decodeURIComponent(location.hash.slice(recapPrefix[0].length)));
     if (!Array.isArray(data) || ![4, 5, 6].includes(data.length)) return false;
     const [locale, name, icon, ...rest] = data;
     if (![0, 1].includes(locale) || typeof name !== 'string' || !name.trim() || name.length > 24 ||
@@ -450,6 +594,8 @@ function openSharedRecap() {
     lang = locale;
     nickname = name;
     avatar = icon;
+    usePackVersion(recapPrefix[2] ? 2 : 1);
+    sharedAnswers = full && recapPrefix[1] === 'answers';
     resultStyle = full ? 'badge' : 'stat';
     sharedRecap = true;
     show('personal');
@@ -463,7 +609,7 @@ async function drawRecapPreview(canvas, challenge = false) {
   const fill = recapPalettes[recapPalette][0];
   const layout = 'comic';
   const link = recapLink();
-  const save = document.getElementById(canvas.id === 'challenge-thumbnail' ? 'copy-challenge' : 'save-recap');
+  const save = document.getElementById('save-recap');
   if (save) save.disabled = true;
   canvas.width = challenge ? 1200 : 900;
   canvas.height = challenge ? 630 : 1200;
@@ -519,9 +665,10 @@ async function drawRecapPreview(canvas, challenge = false) {
     if (canvas.isConnected) {
       canvas.parentElement.querySelector('figcaption').textContent = t('预览加载失败，请重试。', 'Couldn’t load the preview. Try again.');
       canvas.closest('figure').setAttribute('aria-busy', 'false');
-      if (save && canvas.id === 'challenge-thumbnail') save.disabled = false;
-      else if (save) {
-        save.textContent = t('重试预览', 'Retry preview');
+      if (save) {
+        const retry = t('重试预览', 'Retry preview');
+        save.setAttribute('aria-label', retry);
+        save.querySelector('span').textContent = retry;
         save.disabled = false;
         save.onclick = () => render();
       }
@@ -536,7 +683,7 @@ function drawRoundPoster(ctx, qr, fill, layout, ink, write) {
   const paper = '#fffdf6';
   // The same three findings as the card, in the same order, but in their short
   // form: this canvas draws big text that does not wrap inside fixed panels.
-  const picked = personalPanels(answers, lang);
+  const picked = personalPanels(answers, lang, 3, questions === currentQuestions ? 2 : 1);
   while (picked.length < 3) picked.push({ prompt: packName(), reply: t('八道题', 'Eight questions') });
   const prompts = picked.map(panel => panel.prompt);
   const replies = picked.map(panel => panel.reply);
@@ -597,7 +744,7 @@ function drawRoundPoster(ctx, qr, fill, layout, ink, write) {
   const qrSize = Math.floor(150 / qrModules) * qrModules;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(qr, right - qrSize, 1022, qrSize, qrSize);
-  write(t('扫码看我的答案', 'Scan to view the recap'), left, 1061, 29, 800, 560);
+  write((sharedRecap ? t('扫码看我的答案', 'Scan to view the recap') : t('扫码看我的全部答案', 'Scan to see all my answers')), left, 1061, 29, 800, 560);
   write(packName(), left, 1101, 24, 700, 560);
   write(t('八道题，换你来选。', 'Eight questions to play with friends.'), left, 1136, 23, 600, 560);
 }
@@ -776,7 +923,7 @@ function drawComicCover(ctx, qr, fill, ink, prompts, replies, write) {
   const modules = qr.width / 7;
   const qrSize = Math.floor(124 / modules) * modules;
   const qrX = 846 - qrSize;
-  const first = write(t('扫码看我的答案', 'Scan to view the recap'), 50, lang === 0 ? 1018 : 1058, 33, 800, 590);
+  const first = write((sharedRecap ? t('扫码看我的答案', 'Scan to view the recap') : t('扫码看我的全部答案', 'Scan to see all my answers')), 50, lang === 0 ? 1018 : 1058, 33, 800, 590);
   write(packName(), 50, lang === 0 ? 1055 : 1095, 24, 800, 590);
   const last = write(t('八道题，换你来选。', 'Eight questions to play with friends.'), 50, lang === 0 ? 1090 : 1130, 23, 700, 590);
   const qrY = Math.round((first.top + last.bottom - qrSize) / 2);
@@ -786,21 +933,7 @@ function drawComicCover(ctx, qr, fill, ink, prompts, replies, write) {
   ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
 }
 
-function challengeLink() {
-  const url = new URL(location.pathname, location.origin);
-  url.searchParams.set('challenge', JSON.stringify([lang, nickname, avatar]));
-  return url.href;
-}
-
-async function saveRecapImage() {
-  if (resultStyle === 'guess') {
-    const link = challengeLink();
-    try {
-      await navigator.clipboard.writeText(link);
-      message(t('猜题链接已复制。', 'Challenge link copied.'));
-    } catch { message(link); }
-    return;
-  }
+function saveRecapImage() {
   const canvas = document.getElementById('recap-preview');
   if (canvas.closest('figure').getAttribute('aria-busy') !== 'false' || !canvas.parentElement.querySelector('figcaption').hidden) return;
   const download = document.createElement('a');
@@ -810,29 +943,6 @@ async function saveRecapImage() {
   message(t('图片已生成。', 'Image ready.'));
 }
 
-async function copyResult() {
-  const { title, lines, kicker } = resultCards()[resultStyle];
-  const choices = lines.map((line, i) => resultStyle === 'guess' ? `${'ABC'[i]}. ${line}` : `• ${line}`);
-  const text = [title, kicker, ...choices, packName() + ' · Little Things'].join('\n');
-  try {
-    await navigator.clipboard.writeText(text);
-    message(t('文案已复制。', 'Card text copied.'));
-  } catch {
-    message(t('复制失败，可以长按卡片文字复制。', 'Couldn’t copy. Select the card text to copy it.'));
-  }
-}
-
-function conversationStarter(submissions) {
-  const spoilers = submissions.map(entry => entry.answers[4]);
-  const split = spoilers.includes(0) && spoilers.includes(2);
-  const ask = split
-    ? t('有人想直接听结局，有人一个字都不想听。那预告片放到哪一步，你会觉得它剧透了？',
-        'Some of you want the whole ending. Others don’t want a word. How much can a trailer show before it spoils the movie?')
-    : t('多出来的那一小时，你会怎么花？说说你的第一件事。',
-        'Picture that extra hour. What’s the first thing you’d do with it?');
-  return `<aside class="conversation"><h2>${t('接着聊', 'Keep talking')}</h2><p>${ask}</p></aside>`;
-}
-
 function playerChip(player) {
   return `<span class="player-chip">${avatarIcon(player.avatar)}${escape(player.nickname)}</span>`;
 }
@@ -840,38 +950,47 @@ function playerChip(player) {
 function groupComparison(question, index, players, position) {
   const entries = players.map(player => ({ player, value: player.answers[index] }))
     .filter(({ value }) => value !== '' && value != null);
-  if (!entries.length) return '';
+  const single = players.length === 1;
+  if (!entries.length && !single) return '';
   const title = `<h2><span class="group-index">${position}</span>${escape(question.title[lang])}</h2><p class="sub">${escape(question.prompt[lang])}</p>`;
-  if (players.length === 2 && ['choice', 'text'].includes(question.kind)) {
-    const same = question.kind !== 'text' && entries.length === 2 &&
-      JSON.stringify(entries[0].value) === JSON.stringify(entries[1].value);
+  if (!entries.length) {
     return `<section class="group-question">${title}
-      <div class="pair-grid">${players.map((player, side) => {
-        const value = player.answers[index];
-        return `<div class="pair-side side-${side}">${playerChip(player)}
-          <strong>${escape(value === '' || value == null ? t('跳过', 'Skipped') : displayAnswer(question, value))}</strong></div>`;
-      }).join('')}</div>${same ? `<p class="group-match">✦ ${t('这题选得一样', 'Same answer')}</p>` : ''}</section>`;
+      <div class="group-replies"><strong>${t('已跳过', 'Skipped')}</strong></div></section>`;
   }
   if (question.kind === 'choice') {
     const buckets = question.options[lang].map((option, i) =>
       ({ option, people: entries.filter(entry => entry.value === i).map(entry => entry.player), i }))
       .filter(({ people }) => people.length);
     return `<section class="group-question">${title}
-      <div class="vote-strip" aria-hidden="true">${buckets.map(({ people, i }) =>
-        `<span class="side-${i}" style="flex-grow:${people.length}">${people.length}</span>`).join('')}</div>
+      ${players.length > 2 ? `<div class="vote-strip" aria-hidden="true">${buckets.map(({ people, i }) =>
+        `<span class="side-${i}" style="flex-grow:${people.length}">${people.length}</span>`).join('')}</div>` : ''}
       <div class="vote-legend">${buckets.map(({ option, people, i }) => `<div class="vote-bucket side-${i}">
-        <div class="vote-heading"><strong>${escape(option)}</strong><span>${people.length}/${entries.length}</span></div><div class="player-list">${people.map(playerChip).join('')}</div>
-      </div>`).join('')}</div></section>`;
+        <strong>${escape(option)}</strong>${single ? '' : `<div class="player-list">${people.map(playerChip).join('')}</div>`}
+      </div>`).join('')}</div>
+    </section>`;
+  }
+  if (single && question.kind === 'assign') {
+    const { value } = entries[0];
+    return `<section class="group-question">${title}<div class="fate-matrix">
+      <div class="fate-grid fate-headings">${question.options[lang].map(recipient =>
+        `<strong>${escape(recipient)}</strong>`).join('')}</div>
+      <div class="fate-row"><div class="fate-grid">${question.options[lang].map((_, i) =>
+        `<div class="side-${i}">${escape(question.items[lang][value.indexOf(i)])}</div>`).join('')}</div></div>
+    </div></section>`;
   }
   if (question.kind === 'assign') {
     return `<section class="group-question">${title}<div class="fate-matrix">
-      <div class="fate-grid">${question.options[lang].map((fate, i) =>
-        `<strong class="side-${i}">${escape(fate)}</strong>`).join('')}</div>
+      <div class="fate-grid fate-headings">${question.options[lang].map(fate =>
+        `<strong>${escape(fate)}</strong>`).join('')}</div>
       ${question.items[lang].map((item, j) => `<div class="fate-row"><h3>${escape(item)}</h3>
         <div class="fate-grid">${question.options[lang].map((fate, i) => {
           const people = entries.filter(entry => entry.value[j] === i).map(entry => entry.player);
           return `<div class="side-${i}" aria-label="${escape(fate)}">${people.length ? people.map(playerChip).join('') : '—'}</div>`;
         }).join('')}</div></div>`).join('')}</div></section>`;
+  }
+  if (single) {
+    return `<section class="group-question">${title}
+      <div class="group-replies"><strong>${escape(entries[0].value)}</strong></div></section>`;
   }
   const ordered = question.kind === 'number' ? entries.slice().sort((a, b) => b.value - a.value) : entries;
   const max = question.kind === 'number' ? Math.max(1, ...ordered.map(entry => entry.value)) : 1;
@@ -880,37 +999,47 @@ function groupComparison(question, index, players, position) {
       ${question.kind === 'number' ? `<div class="number-track" aria-hidden="true"><span style="width:${value / max * 100}%"></span></div>` : ''}</div>`).join('')}</div></section>`;
 }
 
-function group() {
+function groupAnswers() {
   const { submissions } = roster;
-  const choices = questions.map((question, i) => ({ question, i }))
-    .filter(({ question }) => question.kind === 'choice');
-  const shared = choices.filter(({ i }) => submissions.length > 1 && submissions.every(player => player.answers[i] === submissions[0].answers[i])).length;
-  const ready = submissions.length > 1;
-  const summary = ready ? `<div class="group-score">
-    <div><strong>${shared}/${choices.length}</strong><span>${t('选择题全员一致', 'single-choice picks in common')}</span></div>
-    <div><strong>${choices.length - shared}</strong><span>${t('题有分歧', 'split decisions')}</span></div>
-    <div class="player-list">${submissions.map(playerChip).join('')}</div></div>` : '';
   const order = [4, 2, 3, 0, 5, 1, 6, 7].filter(i => submissions.some(player => player.answers[i] !== '' && player.answers[i] != null));
-  return `<section class="room-reveal"><h1>${t('这一局，大家怎么选？', 'The room reveal')}</h1>
-    <p class="room-count">${t(`已提交：${roster.count} 人`, `${roster.count} submitted`)}</p>${summary}
-    ${ready ? conversationStarter(submissions) + order.map((i, position) => groupComparison(questions[i], i, submissions, position + 1)).join('')
-      : `<p class="sub">${t('你已经答完了。等至少一位朋友交卷，这里就会显示你们的答案。', 'You’ve finished. Once at least one friend submits, your answers will appear here.')}</p>`}
-    <div class="actions">${button('mine', t('我的结果', 'My result'))}${button('group', t('刷新', 'Refresh'))}</div>${status}</section>`;
+  return `<div class="player-list room-players" role="group" aria-label="${t('本局玩家', 'Players in this round')}">${submissions.map(playerChip).join('')}</div>
+    ${order.map((i, position) => groupComparison(questions[i], i, submissions, position + 1)).join('')}`;
+}
+
+function group() {
+  return `<section class="room-reveal">
+    ${button('back-to-recap', t('← 我的回顾', '← My recap'), 'recap-back')}
+    <h1>${t('这一局，大家怎么选？', 'The room reveal')}</h1>
+    <p class="sub" id="group-progress" role="status"></p>
+    <div id="group-answers">${groupAnswers()}</div>
+    <footer class="group-footer">
+      ${roomPanel()}
+      ${button('mine', t('看我的回顾', 'See my recap'))}
+    </footer></section>${status}`;
 }
 
 const packName = () => t('日常小事', 'Everyday Dilemmas');
 
+function packCard({ heading = 'h1', invited = false } = {}) {
+  const countTag = `<span class="pack-count">${t(`${questions.length} 道题`, `${questions.length} questions`)}</span>`;
+  return frame(`<${heading} class="pack-title">${packName()}</${heading}>
+    ${invited ? '<p class="sub invite-spots" id="round-counts" role="status"></p>'
+      : `<p class="sub">${t('无聊的小事也有意想不到的答案。', 'A game to get to know each other through questions you’d never think to ask.')}</p>`}
+    <div class="actions">${button('start', t('开始答题', 'Start Quiz'), 'primary')}</div>${status}`,
+    `<div class="art hero-art"><img src="./everyday-cover.png" alt="">${countTag}</div>`, 'hero');
+}
+
+
 function render() {
   if (debug) document.querySelector('.brand').href = '?debug=1';
   document.documentElement.lang = t('zh-CN', 'en');
+  headerShare.hidden = !sharedRecap || resultStyle !== 'guess';
   headerShare.textContent = t('分享', 'Share');
-  language.textContent = t('English', '中文');
-  const countTag = `<span class="pack-count">${t(`${questions.length} 道题`, `${questions.length} questions`)}</span>`;
-  if (screen === 'home') {
-    app.innerHTML = frame(`<h1>${packName()}</h1>
-      <p class="sub">${t('无聊的小事也有意想不到的答案。', 'A game to get to know each other through questions you’d never think to ask.')}</p>
-      <div class="actions">${button('start', t('开始答题', 'Start Quiz'), 'primary')}</div>${status}`, `<div class="art hero-art"><img src="./party-die.png" alt="">${countTag}</div>`, 'hero');
-    linkAction('start', () => start());
+  language.setAttribute('aria-label', t('语言', 'Language'));
+  for (const chip of language.children) chip.setAttribute('aria-pressed', String(Number(chip.dataset.language) === lang));
+  if (screen === 'home' || screen === 'invite') {
+    app.innerHTML = packCard({ invited: screen === 'invite' });
+    linkAction('start', start);
   } else if (screen === 'quiz') {
     app.innerHTML = quiz();
     const q = questions[index];
@@ -937,11 +1066,10 @@ function render() {
     });
     linkAction('back', () => { index -= 1; show('quiz'); });
   } else if (screen === 'submit') {
-    app.innerHTML = frame(`<h1>${t('朋友怎么称呼你？', 'What should friends call you?')}</h1>
-      <p class="sub">${t('提交后，房间里答完的人可以看到你的昵称和答案。', 'After you submit, friends who finish can see your nickname and answers.')}</p>
+    app.innerHTML = frame(`<h1>${t('给你的答案署个名', 'Sign your answers')}</h1>
       <form class="options" id="submit"><label class="stack">${t('昵称', 'Nickname')}<input class="field" name="nickname" maxlength="24" required value="${escape(nickname)}"></label>
       ${avatarPicker()}
-      <div class="actions">${button('back', t('上一题', 'Back'))}<button class="button primary" type="submit">${t('提交并看结果', 'Submit and see my result')}</button></div></form>${status}`, art('✿'));
+      <div class="actions">${button('back', t('上一题', 'Back'))}<button class="button primary" type="submit">${t('提交', 'Submit')}</button></div></form>${status}`, cornerSticker('✿', '#fff0b4'), 'corner-frame profile-frame') + roomPanel();
     linkAction('back', () => show('quiz'));
     const form = document.getElementById('submit');
     form.addEventListener('input', () => { nickname = form.elements.nickname.value; avatar = Number(form.elements.avatar.value); savePlayer(); });
@@ -954,9 +1082,9 @@ function render() {
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
       try {
-        await api('/' + room, 'POST', { nickname, answers, token, avatar });
+        await submitAnswers(room, { nickname, answers, token, avatar });
         savePlayer();
-        roster = await api('/' + room).catch(() => ({ count: 1, submissions: [] }));
+        roster = await readRoom(room, token).catch(() => ({ ...roster, count: Math.max(1, roster.count), submitted: true, submissions: [] }));
         show('personal');
       } catch {
         message(t('没提交成功，再试一次。', 'Couldn’t submit. Try again.'));
@@ -968,7 +1096,6 @@ function render() {
     const canvas = document.getElementById('recap-preview');
     if (canvas) drawRecapPreview(canvas);
     linkAction('save-recap', saveRecapImage);
-    linkAction('open-summary', () => { resultStyle = 'badge'; show('personal'); });
     for (const control of app.querySelectorAll('[data-recap-palette]')) {
       control.addEventListener('click', () => {
         recapPalette = control.dataset.recapPalette;
@@ -985,24 +1112,45 @@ function render() {
     linkAction('recap-next', () => turn(1));
   }
   else if (screen === 'group') app.innerHTML = group();
-  else app.innerHTML = frame(`<h1>${t('找不到这个房间', 'Room not found')}</h1><div class="actions"><a href="./">${t('回首页', 'Back to home')}</a></div>`);
+  else {
+    app.innerHTML = `<section class="unavailable">
+      <img class="unavailable-art" src="./room-unavailable.png" alt="">
+      <h1>${t('哎呀，找不到这局了', 'Whoops!')}</h1>
+      <p class="sub">${t('这个邀请链接已经打不开了。', 'This invite link doesn’t open a round anymore.')}</p>
+      <a class="button primary" href="./">${t('找个游戏玩', 'Find something to play')}</a>
+    </section>
+    <section class="suggested-packs" aria-labelledby="suggested-heading">
+      <h2 id="suggested-heading">${t('你可能也喜欢', 'You may like')}</h2>
+      ${packCard({ heading: 'h3' })}
+    </section>`;
+    linkAction('start', () => {
+      if (busy) return;
+      room = null;
+      index = 0;
+      answers = Array(questions.length).fill(null);
+      start();
+    });
+  }
   app.querySelector('h1')?.setAttribute('tabindex', '-1');
-  const sharePersonal = document.getElementById('share-personal');
-  if (sharePersonal) sharePersonal.onclick = openShare;
+  updateRoomPanel();
+  linkAction('copy-invite', invite);
   linkAction('mine', () => show('personal'));
+  linkAction('back-to-recap', () => show('personal'));
   linkAction('group', async () => {
-    if (debug) return show('group');
+    if (debug) return resultsReady() && show('group');
     try {
-      roster = await api('/' + room);
-      show('group');
+      await refreshRoom();
+      if (resultsReady()) show('group');
     } catch { message(t('没拿到房间结果，再试一次。', 'Couldn’t load the room. Try again.')); }
   });
 }
 
-headerShare.addEventListener('click', openShare);
+headerShare.addEventListener('click', () => copyLink(location.href, document.getElementById('status')));
 
-language.addEventListener('click', () => {
-  lang = 1 - lang;
+language.addEventListener('click', event => {
+  const chip = event.target.closest('[data-language]');
+  if (!chip || Number(chip.dataset.language) === lang) return;
+  lang = Number(chip.dataset.language);
   if (!debug) localStorage.setItem('little-things-language', t('zh', 'en'));
   render();
 });
@@ -1010,30 +1158,43 @@ language.addEventListener('click', () => {
 const demoAnswers = [1, 2, 23, [0, 2, 1], 0, 0, 1, '发圈'];
 
 function preview(page) {
+  if (page === 'example-ad') {
+    preview('crowd');
+    document.getElementById('preview-page').value = page;
+    openExampleAd();
+    return;
+  }
+  usePackVersion(2);
   answers = structuredClone(demoAnswers);
   nickname = 'Mia';
   avatar = 1;
-  roster = { count: 2, submissions: [
+  resultStyle = 'badge';
+  roster = { count: 2, joined: 2, capacity: 5, submissions: [
     { nickname, avatar, answers: structuredClone(answers) },
     { nickname: 'Alex', avatar: 4, answers: [2, 1, 7, [2, 1, 0], 2, 1, 0, 'Keys'] }
   ] };
   if (page.startsWith('q')) {
-    roster = { count: 0, submissions: [] };
+    roster = { count: 0, joined: 1, capacity: 5, submissions: [] };
     index = Number(page.slice(1));
     answers[index] = null;
     show('quiz');
   } else {
     index = questions.length - 1;
-    if (['waiting', 'personal', 'home', 'submit'].includes(page)) roster = { count: 1, submissions: roster.submissions.slice(0, 1) };
+    if (['waiting', 'personal', 'home', 'submit', 'invite'].includes(page)) {
+      roster.count = page === 'submit' ? 0 : 1;
+      roster.joined = page === 'waiting' ? 3 : 1;
+      roster.submissions = [];
+    }
+    if (page === 'personal-partial' || page === 'group-partial') roster.joined = 3;
     if (page === 'crowd') {
       roster.submissions.push(
         { nickname: 'Jo', avatar: 0, answers: [1, 2, 15, [0, 1, 2], 1, 1, 2, ''] },
         { nickname: 'Sam', avatar: 5, answers: [0, 1, 34, [2, 0, 1], 0, 1, 0, 'Pens'] },
         { nickname: 'Kai', avatar: 2, answers: [2, 2, 0, [1, 2, 0], 2, 0, 2, 'Socks'] }
       );
-      roster.count = roster.submissions.length;
+      roster.joined = roster.count = roster.submissions.length;
     }
-    show(['waiting', 'crowd'].includes(page) ? 'group' : page === 'personal-ready' ? 'personal' : page);
+    show(['crowd', 'group-partial'].includes(page) ? 'group' : ['waiting', 'personal-ready', 'personal-partial'].includes(page) ? 'personal' : page);
   }
 }
 
@@ -1042,8 +1203,8 @@ function setupPreview() {
   panel.className = 'debug-panel';
   panel.open = true;
   const pages = [
-    ['home', '首页'], ...questions.map((q, i) => ['q' + i, `${i + 1}. ${q.title[0]}`]),
-    ['submit', '昵称与头像'], ['personal', '个人结果 · 好友未交卷'], ['personal-ready', '个人结果 · 好友已交卷'], ['waiting', '群体结果 · 仅自己交卷'], ['group', '双人结果'], ['crowd', '五人结果'], ['missing', '房间失效']
+    ['home', '首页'], ['invite', '邀请封面'], ...questions.map((q, i) => ['q' + i, `${i + 1}. ${q.title[0]}`]),
+    ['submit', '昵称与头像'], ['personal', '个人回顾 · 只有自己'], ['waiting', '个人回顾 · 等待交卷'], ['personal-partial', '个人回顾 · 两人已交卷'], ['personal-ready', '个人回顾 · 全员交卷'], ['group', '双人结果'], ['group-partial', '群体结果 · 有人未交卷'], ['crowd', '五人结果'], ['example-ad', '测试广告'], ['missing', '房间失效']
   ];
   panel.innerHTML = `<summary>Demo · 页面预览</summary>
     <div class="preview-nav"><button type="button" class="button" id="preview-prev" aria-label="上一页" title="上一页（←）">←</button>
@@ -1060,7 +1221,7 @@ function setupPreview() {
   panel.querySelector('#preview-prev').addEventListener('click', () => step(-1));
   panel.querySelector('#preview-next').addEventListener('click', () => step(1));
   document.addEventListener('keydown', event => {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey ||
+    if (document.getElementById('example-ad') || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey ||
         event.shiftKey || event.target.closest('input, textarea, select, [contenteditable], [role="radio"]')) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
@@ -1069,37 +1230,41 @@ function setupPreview() {
   preview('home');
 }
 
-let checkingRoom = false;
-async function refreshPersonalCount() {
-  if (checkingRoom || debug || sharedRecap || !room || screen !== 'personal' || document.hidden) return;
-  checkingRoom = true;
-  try {
-    const current = await api('/' + room);
-    if (screen !== 'personal' || current.count === roster.count) return;
+let roomRequest;
+function refreshRoom() {
+  if (roomRequest) return roomRequest;
+  roomRequest = readRoom(room, token).then(current => {
+    const changed = current.submissions.length !== roster.submissions.length;
     roster = current;
-    const action = document.getElementById('share-personal');
-    if (action && roster.count > 1) {
-      action.textContent = t('看看大家怎么答', 'See everyone’s answers');
-      action.id = 'group';
-      action.onclick = () => show('group');
-    }
-  } catch {
-    // Keep the current action when the room cannot be reached.
-  } finally { checkingRoom = false; }
+    if (screen === 'group' && changed) document.getElementById('group-answers').innerHTML = groupAnswers();
+    updateRoomPanel();
+  }).finally(() => { roomRequest = null; });
+  return roomRequest;
 }
-window.setInterval(refreshPersonalCount, 10000);
-document.addEventListener('visibilitychange', refreshPersonalCount);
+
+function syncRoom() {
+  if (debug || busy || sharedRecap || !room || document.hidden ||
+      !['invite', 'quiz', 'submit', 'personal', 'group'].includes(screen)) return;
+  refreshRoom().catch(() => {});
+}
+window.setInterval(syncRoom, 3000);
+document.addEventListener('visibilitychange', syncRoom);
+window.addEventListener('online', syncRoom);
 
 async function initialize() {
   if (openSharedRecap()) return;
-  resultStyle = 'badge';
   if (debug) return setupPreview();
   if (!roomParam) return render();
   if (!room) return show('missing');
   loadPlayer();
   try {
-    roster = await api('/' + room);
-    show(roster.submissions.length ? 'personal' : 'quiz');
+    roster = await readRoom(room, token);
+    usePackVersion(roster.packVersion);
+    if (roster.submitted) return show('personal');
+    if (!roster.member) return show('invite');
+    const unanswered = questions.findIndex((q, i) => !valid(q, answers[i]));
+    index = unanswered < 0 ? questions.length - 1 : unanswered;
+    show('quiz');
   } catch { show('missing'); }
 }
 initialize();

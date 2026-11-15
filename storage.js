@@ -1,16 +1,16 @@
 // The one place that knows where rooms are stored.
 //
-// Two backends behind the same three calls:
+// Two backends behind the same room API:
 //   - Supabase, when config.js carries a key. This is what the deployed site uses,
 //     because HackOnVibe serves static files and has no server of its own.
-//   - The local Node server in server.js, used by `npm run dev` when no key is set.
+//   - The local Node server in server.js, used by `npm run dev` on localhost or when no key is set.
 //
 // Everything else in the app goes through createRoom / readRoom / submitAnswers
 // and never learns which one is in play.
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-export const usingSupabase = Boolean(SUPABASE_ANON_KEY) && /^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL);
+export const usingSupabase = !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && Boolean(SUPABASE_ANON_KEY) && /^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL);
 
 async function rpc(name, args) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
@@ -44,17 +44,19 @@ export async function createRoom() {
   return id;
 }
 
-/**
- * Read a room as this player sees it.
- * Everyone can see how many people have answered; only a player who has answered
- * gets the answers themselves. That rule lives in the database, not here, so a
- * player cannot read the room early by editing this file.
- */
+/** Reserve a seat when someone starts the quiz. */
+export async function joinRoom(roomId, token) {
+  if (!usingSupabase) return local('/' + roomId + '/join', 'POST', undefined, token);
+  return rpc('join_room', { p_room: roomId, p_token: token });
+}
+
+/** The room service returns comparisons to submitted players once two answers are in. */
 export async function readRoom(roomId, token) {
   if (!usingSupabase) return local('/' + roomId, 'GET', undefined, token);
   const room = await rpc('read_room', { p_room: roomId, p_token: token ?? '' });
   if (!room) throw new Error('404');
-  return { count: room.count ?? 0, submissions: room.submissions ?? [] };
+  if (typeof room.joined !== 'number') throw new Error('Room schema needs updating');
+  return room;
 }
 
 /** Record this player's answers. Submitting twice with the same token is a no-op. */
@@ -67,6 +69,12 @@ export async function submitAnswers(roomId, entry) {
     p_token: entry.token,
     p_avatar: entry.avatar ?? 0
   });
+}
+
+/** Example ad reward: one more seat in a full round. Not a real ad network. */
+export function unlockExampleSpot(roomId, token, attempt) {
+  if (!usingSupabase) return local('/' + roomId + '/example-reward', 'POST', { attempt }, token);
+  return rpc('unlock_example_spot', { p_room: roomId, p_token: token, p_attempt: attempt });
 }
 
 /** A QR image for the recap link, drawn in the browser. */
