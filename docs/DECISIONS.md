@@ -24,7 +24,7 @@
 
 - **Results sequencing.** Revise Compare answers (screen 18) first. Then design Shared recap as its single-player counterpart, showing the sharer’s answers to the eight questions through the poster QR or recap link. The full-answer scope must be clear to the sharer. The room invite continues to open the invite cover, and **Try the same quiz** starts from the pack cover. New poster links open the full answer list. Older poster links keep their three-answer view.
 
-- `config.js` still needs the Supabase anon key, and `supabase/schema.sql` still needs to be run once, before the deployed site can open a room. Cross-device verification is pending on that.
+- The deployed site runs on Supabase with `supabase/schema.sql` applied. Joining, the five-seat limit, the two-answer gate, late joins and the example-ad seat were verified against the live database on 15 Nov 2026. A playtest on two real phones is still to do.
 - The MVP enforces five seats. Handling abandoned seats and connecting rewarded ads are open. The full-room action opens a five-second example ad, locally and on the hosted site. Closing the example early leaves capacity unchanged. Completion adds one seat, up to 20 per round, briefly offers Done, then returns with a reward and copy-status toast. On the hosted site the reward is the `unlock_example_spot` database function. No real ad network is connected.
 - The group page shows the comparisons directly. Model-written observations remain follow-up work.
 - Future packs include 难选局, a Chinese-first food pack, and a dating pack. Each gets its own name and questions.
