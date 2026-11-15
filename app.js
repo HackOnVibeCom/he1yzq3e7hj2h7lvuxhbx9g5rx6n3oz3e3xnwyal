@@ -253,7 +253,9 @@ function showToast(text) {
 }
 
 function openExampleAd() {
-  if (document.getElementById('example-ad')) return;
+  const previous = document.getElementById('example-ad');
+  if (previous?.open) return;
+  previous?.remove();
   const ad = document.createElement('dialog');
   ad.id = 'example-ad';
   ad.setAttribute('aria-labelledby', 'example-ad-title');
@@ -279,19 +281,22 @@ function openExampleAd() {
   let autoReturn;
   let granting = false;
   let unlocked = false;
+  function cleanUp() {
+    window.clearInterval(timer);
+    window.clearTimeout(autoReturn);
+    ad.remove();
+  }
   async function returnToRoom() {
     if (!ad.open) return;
     ad.close();
+    // Don't rely on the close event alone: a backgrounded page can hold it back.
+    cleanUp();
     if (!unlocked) return;
     const copied = !debug && await copyLink(roomInviteUrl(), document.getElementById('invite-status'));
     showToast(copied ? t('增加了一个位置 · 链接已复制', '1 spot unlocked · Link copied')
       : t('已增加一个位置', '1 spot unlocked'));
   }
-  ad.addEventListener('close', () => {
-    window.clearInterval(timer);
-    window.clearTimeout(autoReturn);
-    ad.remove();
-  });
+  ad.addEventListener('close', cleanUp);
   exit.addEventListener('click', returnToRoom);
   ad.addEventListener('cancel', event => {
     if (!granting && !unlocked) return;
@@ -325,6 +330,7 @@ function openExampleAd() {
       autoReturn = window.setTimeout(returnToRoom, 2000);
     } catch {
       ad.close();
+      cleanUp();
       showToast(t('没能增加名额，再试一次。', 'Couldn’t unlock a spot. Try again.'));
     } finally {
       granting = false;
