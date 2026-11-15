@@ -69,13 +69,6 @@ const TRIGGERS = [
     panel: () => [['认错人我秒收手。那没人看着的时候呢？', 'My hand drops instantly. So what do I do alone?'],
                   ['戴着耳机唱歌', 'Sing in headphones']] },
 
-  { group: 'c4', punch: 86, covers: [4, 7],
-    when: a => a[4] === 0 && misplaced(a) !== '',
-    line: a => [`剧透我一个字都不想听，但我老是在找${misplaced(a)}。`,
-                `No spoilers, please. I’m already busy looking for my ${misplaced(a)}.`],
-    panel: a => [['不听剧透。那我老是在找什么？', "No spoilers. What am I always looking for?"],
-                 [misplaced(a), misplaced(a)]] },
-
   // ---- Q3 · tabs. The widest range in the pack, so it carries the highest
   // ceiling of any single question. The magnitude is the joke, not the precision.
   { group: 'q2', punch: 95, when: a => a[2] >= 100,

@@ -56,7 +56,7 @@ restatement.
 
 ## The table itself lives in code
 
-`triggers.js` holds all 26 triggers, their conditions, both languages and both
+`triggers.js` holds all 27 triggers, their conditions, both languages and both
 forms. It is the only copy; keeping a second one here in prose would drift the
 first time a score moved. What stays in this file is everything the code cannot
 say about itself: why the rules are shaped this way.
@@ -88,7 +88,7 @@ Two mechanics keep a card from repeating itself:
 
 Checked across all 15,552 answer combinations in both languages: every card gets
 three lines, no card repeats a line, and no share image overflows its panels.
-The pack produces 441 distinct Chinese cards.
+The original pack produces 376 distinct Chinese cards; the current one, 117.
 
 ## Group page
 
