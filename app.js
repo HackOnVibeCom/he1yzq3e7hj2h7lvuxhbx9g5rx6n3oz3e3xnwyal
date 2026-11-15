@@ -825,7 +825,7 @@ function drawChallengeCover(ctx, fill, ink, write) {
   ctx.fillStyle = ink;
   ctx.fill();
   ctx.fillStyle = fill;
-  ctx.font = '800 30px Bricolage Grotesque, PingFang SC, sans-serif';
+  ctx.font = `800 30px ${getComputedStyle(document.body).fontFamily}`;
   ctx.fillText(t('点开来猜 →', 'Take a guess →'), 940, 597, 234);
 }
 

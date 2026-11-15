@@ -1,4 +1,3 @@
-@import url("https://fontsapi.zeoseven.com/92/main/result.css");
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap');
 :root {
   color-scheme: light;
@@ -152,7 +151,7 @@ label.stack { display: grid; gap: 5px; font-weight: 700; }
 .flat-card-center { background: var(--primary); color: #fff1a3; transform: rotate(-4deg); }
 
 html[lang="zh-CN"] {
-  --body: var(--zh-smiley);
+  --body: var(--zh-pingfang);
   --display: var(--body);
 }
 html[lang="zh-CN"] h1 { letter-spacing: 0; line-height: 1.32; font-weight: 700; }
@@ -391,7 +390,6 @@ html[lang="zh-CN"] .option { font-weight: 400; line-height: 1.6; }
 .fate-row h3 { font-size: 1rem; margin: 10px 0 5px; }
 
 :root {
-  --zh-smiley: "Smiley Sans Oblique", var(--zh-pingfang);
   --paper: #fbf9f0;
   --white: #fffdf8;
   --ink: #1c2a14;

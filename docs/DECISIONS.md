@@ -18,7 +18,7 @@
 - **The anon key ships in the browser and is not a password.** Both tables have row level security on with no policies, so that key cannot read or write a table. Three `security definer` functions are the only way in, which puts the "answer first, then you get to look" rule in the database rather than in client code a player could edit. Player tokens never leave it.
 - **Personalised link previews are given up.** Scrapers do not run JavaScript and there is no server to rewrite the page, so the room invite shows a fixed last-bite teaser without the friend's name or avatar. The alternative was a server, which the host does not offer.
 
-- **Visual system** uses Bricolage Grotesque for English and the bilingual wordmark, 得意黑 for Chinese, pop-comic outlines, hard shadows and lime as the main app accent. The quiz keeps its question icons in compact corner stickers.
+- **Visual system** uses Bricolage Grotesque for English and the bilingual wordmark, PingFang SC for Chinese (replacing 得意黑), pop-comic outlines, hard shadows and lime as the main app accent. The quiz keeps its question icons in compact corner stickers.
 
 ## Prototype choices and open work
 

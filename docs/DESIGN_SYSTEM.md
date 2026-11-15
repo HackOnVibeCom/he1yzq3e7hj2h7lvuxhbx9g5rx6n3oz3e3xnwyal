@@ -2,7 +2,7 @@
 
 **Product:** Little Things is a game-like "What Would You Pick?" app. Friends answer eight questions, then guess each other's answers. This system covers its sharing and results surfaces: the **recap card**, the **link preview** (1200×630) and the **room reveal** results page.
 
-**One-line style:** *Pop-comic / neo-brutalist stickers on a pastel ground.* Thick ink outlines, hard offset shadows, halftone dots, zigzag paper edges, slightly tilted stickers, one chunky rounded grotesque (Bricolage Grotesque for English and Smiley Sans for Chinese). Friendly and loud, never dark or corporate.
+**One-line style:** *Pop-comic / neo-brutalist stickers on a pastel ground.* Thick ink outlines, hard offset shadows, halftone dots, zigzag paper edges, slightly tilted stickers, one chunky rounded grotesque (Bricolage Grotesque for English and PingFang SC for Chinese). Friendly and loud, never dark or corporate.
 
 > **Using this with another tool / prototype:** copy everything from "Quick rules" down to "Screens" into the prompt. Everything is plain CSS values; no build step is needed.
 
@@ -10,7 +10,7 @@
 
 ## Quick rules (the 12 that matter)
 
-1. **Font:** Bricolage Grotesque for English and the Little Things wordmark in both locales. Smiley Sans for Simplified Chinese, with PingFang SC as the fallback. Headlines 800 with letter-spacing −0.02 to −0.035em and line-height 0.92–1.02.
+1. **Font:** Bricolage Grotesque for English and the Little Things wordmark in both locales. PingFang SC for Simplified Chinese, with Microsoft YaHei as the fallback. Headlines 800 with letter-spacing −0.02 to −0.035em and line-height 0.92–1.02.
 2. **Ground color is a theme.** Every card is one colorway: `bg` (pastel) + `ink` (dark shade of the same hue) + `accent` (one step deeper than bg) + `paper` (#fffdf8 warm white). Default colorway: **lime**.
 3. **Ink is not black.** All text, outlines and shadows use `ink`, a dark tint of the colorway hue. Title text is one ink color; no colored or offset title shadows.
 4. **Everything has a thick outline:** 3px `ink` on cards and stickers (4px on link-preview chips, 6px on the 1200×630 card, 2.5px on small pills and tiles).
